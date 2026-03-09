@@ -63,3 +63,4 @@ yarn-error.log*
 # Local database files
 *.db
 *.sqlite
+node_modules

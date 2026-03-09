@@ -1,6 +1,46 @@
-import { UserPlus, Search } from 'lucide-react';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { UserPlus, Search, Loader2 } from 'lucide-react';
+
+interface Player {
+    id: number;
+    jugador: string;
+    alias: string;
+    posiciones: string;
+    ng: number;
+    ef: number;
+    co: number;
+    cd: number;
+    intensidad: number;
+    fecha_baja: string | null;
+}
 
 export default function PlayersPage() {
+    const [players, setPlayers] = useState<Player[]>([]);
+    const [search, setSearch] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch('/api/players')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setPlayers(data);
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Error fetching players:', err);
+                setLoading(false);
+            });
+    }, []);
+
+    const filteredPlayers = players.filter(p =>
+        p.jugador.toLowerCase().includes(search.toLowerCase()) ||
+        (p.alias && p.alias.toLowerCase().includes(search.toLowerCase()))
+    );
+
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex justify-between items-center mb-8">
@@ -17,6 +57,8 @@ export default function PlayersPage() {
                     <input
                         type="text"
                         placeholder="Buscar por nombre o alias..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                     />
                 </div>
@@ -36,15 +78,33 @@ export default function PlayersPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        <PlayerRow
-                            name="Ejemplo Messi"
-                            pos="ST, MC"
-                            ng={9.5}
-                            ef={8.0}
-                            co={9.8}
-                            cd={4.0}
-                            i={7.5}
-                        />
+                        {loading ? (
+                            <tr>
+                                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                                        <span>Cargando jugadores...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : filteredPlayers.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} className="px-6 py-12 text-center text-gray-500 italic">
+                                    No se encontraron jugadores.
+                                </td>
+                            </tr>
+                        ) : filteredPlayers.map((player) => (
+                            <PlayerRow
+                                key={player.id}
+                                name={player.jugador}
+                                pos={player.posiciones || '-'}
+                                ng={Number(player.ng)}
+                                ef={Number(player.ef)}
+                                co={Number(player.co)}
+                                cd={Number(player.cd)}
+                                i={Number(player.intensidad)}
+                            />
+                        ))}
                     </tbody>
                 </table>
             </div>
@@ -57,10 +117,10 @@ function PlayerRow({ name, pos, ng, ef, co, cd, i }: { name: string, pos: string
         <tr className="hover:bg-white/5 transition-colors cursor-pointer group">
             <td className="px-6 py-4 font-medium">{name}</td>
             <td className="px-6 py-4 text-gray-400">{pos}</td>
-            <td className="px-6 py-4 text-center font-bold text-emerald-400">{ng}</td>
-            <td className="px-6 py-4 text-center text-blue-400">{ef}</td>
-            <td className="px-6 py-4 text-center text-gray-400">{co}/{cd}</td>
-            <td className="px-6 py-4 text-center text-orange-400">{i}</td>
+            <td className="px-6 py-4 text-center font-bold text-emerald-400">{ng.toFixed(1)}</td>
+            <td className="px-6 py-4 text-center text-blue-400">{ef.toFixed(1)}</td>
+            <td className="px-6 py-4 text-center text-gray-400">{co.toFixed(1)}/{cd.toFixed(1)}</td>
+            <td className="px-6 py-4 text-center text-orange-400">{i.toFixed(1)}</td>
             <td className="px-6 py-4">
                 <span className="bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full text-xs font-medium">Activo</span>
             </td>
