@@ -43,15 +43,11 @@ LOAD DATA LOCAL INFILE 'jugadores.csv' INTO TABLE jugadores ...
 
 ## 📝 Changelog (Historial de Cambios)
 
-### [1.0.0] - 2026-03-09
-#### Añadido
-- Inicialización del proyecto con Next.js y TypeScript.
-- Configuración de proxy para entornos corporativos (`.npmrc`).
-- Script de base de datos MariaDB con soporte para `fecha_nacimiento`.
-- Dashboard de **Gestión de Jugadores** con búsqueda y filtros.
-- Módulo de **Fútbol Semanal** con parser de archivos `.txt`.
-- Algoritmo de generación de equipos balanceados.
-- README.md inicial y documentación del proyecto.
+### [1.0.1] - 2026-03-09
+#### Arreglado
+- Error de construcción en `globals.css` debido a incompatibilidad con Tailwind CSS v4.
+- Migración de directivas `@tailwind` a `@import "tailwindcss"` y configuración `@theme`.
+- Limpieza de archivos de configuración obsoletos (`tailwind.config.ts`, `postcss.config.mjs`).
 
 ---
 *Desarrollado para la gestión inteligente de fútbol amateur.*
