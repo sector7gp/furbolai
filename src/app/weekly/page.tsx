@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Users, Trophy, Download, Save } from 'lucide-react';
+import Link from 'next/link';
+import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Users, Trophy, Download, Save, ChevronLeft } from 'lucide-react';
 import { generateTeams, calculateTeamStats } from '@/lib/team-generator';
 import html2canvas from 'html2canvas';
 
@@ -131,9 +132,14 @@ export default function WeeklyPage() {
         return (
             <main className="max-w-5xl mx-auto px-4 py-8">
                 <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold gradient-text">Equipos Equilibrados</h1>
-                        <p className="text-gray-400 text-sm">Sorteo guardado {drawId ? `(#${drawId})` : ''}</p>
+                    <div className="flex items-center gap-4">
+                        <Link href="/" className="p-2 hover:bg-white/5 rounded-full transition-colors hidden sm:block">
+                            <ChevronLeft className="w-6 h-6" />
+                        </Link>
+                        <div>
+                            <h1 className="text-3xl font-bold gradient-text">Equipos Equilibrados</h1>
+                            <p className="text-gray-400 text-sm">Sorteo guardado {drawId ? `(#${drawId})` : ''}</p>
+                        </div>
                     </div>
                     <div className="flex gap-3">
                         <button
@@ -233,9 +239,14 @@ export default function WeeklyPage() {
     return (
         <main className="max-w-2xl mx-auto px-4 py-8 md:py-12">
             <header className="mb-8 flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold gradient-text">Pégalo y Armá</h1>
-                    <p className="text-gray-400 text-sm">Pega la lista de WhatsApp o texto aquí abajo.</p>
+                <div className="flex items-center gap-4">
+                    <Link href="/" className="p-2 hover:bg-white/5 rounded-full transition-colors hidden sm:block">
+                        <ChevronLeft className="w-6 h-6" />
+                    </Link>
+                    <div>
+                        <h1 className="text-3xl font-bold gradient-text">Pégalo y Armá</h1>
+                        <p className="text-gray-400 text-sm">Pega la lista de WhatsApp o texto aquí abajo.</p>
+                    </div>
                 </div>
                 {names.length > 0 && (
                     <button

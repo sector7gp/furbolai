@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft } from 'lucide-react';
 
 interface Player {
     id: number;
@@ -156,7 +157,12 @@ export default function PlayersPage() {
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold gradient-text">Gestión de Jugadores</h1>
+                <div className="flex items-center gap-4">
+                    <Link href="/" className="p-2 hover:bg-white/5 rounded-full transition-colors hidden sm:block">
+                        <ChevronLeft className="w-6 h-6" />
+                    </Link>
+                    <h1 className="text-3xl font-bold gradient-text">Gestión de Jugadores</h1>
+                </div>
                 <button
                     onClick={() => setIsCreating(true)}
                     className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-all shadow-lg shadow-emerald-500/20"
