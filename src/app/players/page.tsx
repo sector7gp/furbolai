@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserPlus, Search, Loader2, Edit2, X, Save } from 'lucide-react';
+import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface Player {
     id: number;
@@ -37,6 +37,10 @@ export default function PlayersPage() {
     const [saving, setSaving] = useState(false);
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Player | 'age'; direction: 'asc' | 'desc' }>({
+        key: 'estado',
+        direction: 'asc'
+    });
 
     useEffect(() => {
         fetchPlayers();
@@ -113,8 +117,8 @@ export default function PlayersPage() {
         }
     };
 
-    const calculateAge = (birthDate: string) => {
-        if (!birthDate) return '-';
+    const calculateAgeNum = (birthDate: string) => {
+        if (!birthDate) return 0;
         const today = new Date();
         const birth = new Date(birthDate);
         let age = today.getFullYear() - birth.getFullYear();
@@ -125,10 +129,26 @@ export default function PlayersPage() {
         return age;
     };
 
-    const filteredPlayers = players.filter(p =>
-        (p.alias && p.alias.toLowerCase().includes(search.toLowerCase())) ||
-        p.jugador.toLowerCase().includes(search.toLowerCase())
-    );
+    const handleSort = (key: keyof Player | 'age') => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+    const filteredPlayers = players
+        .filter(p =>
+            (p.alias && p.alias.toLowerCase().includes(search.toLowerCase())) ||
+            p.jugador.toLowerCase().includes(search.toLowerCase())
+        )
+        .sort((a, b) => {
+            let valA: any = sortConfig.key === 'age' ? calculateAgeNum(a.fecha_nacimiento) : a[sortConfig.key as keyof Player];
+            let valB: any = sortConfig.key === 'age' ? calculateAgeNum(b.fecha_nacimiento) : b[sortConfig.key as keyof Player];
+
+            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
 
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -160,14 +180,46 @@ export default function PlayersPage() {
                 <table className="w-full text-left">
                     <thead className="bg-white/5 text-gray-400 uppercase text-xs">
                         <tr>
-                            <th className="px-6 py-4 font-semibold">Alias</th>
-                            <th className="px-6 py-4 font-semibold text-center">Edad</th>
-                            <th className="px-6 py-4 font-semibold">Posiciones</th>
-                            <th className="px-6 py-4 font-semibold text-center">NG</th>
-                            <th className="px-6 py-4 font-semibold text-center">EF</th>
-                            <th className="px-6 py-4 font-semibold text-center">CO/CD</th>
-                            <th className="px-6 py-4 font-semibold text-center">I</th>
-                            <th className="px-6 py-4 font-semibold text-center">Est.</th>
+                            <th className="px-6 py-4 font-semibold cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('alias')}>
+                                <div className="flex items-center gap-1">
+                                    Alias {sortConfig.key === 'alias' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('age')}>
+                                <div className="flex items-center justify-center gap-1">
+                                    Edad {sortConfig.key === 'age' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('posiciones')}>
+                                <div className="flex items-center gap-1">
+                                    Posiciones {sortConfig.key === 'posiciones' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('ng')}>
+                                <div className="flex items-center justify-center gap-1">
+                                    NG {sortConfig.key === 'ng' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('ef')}>
+                                <div className="flex items-center justify-center gap-1">
+                                    EF {sortConfig.key === 'ef' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('co')}>
+                                <div className="flex items-center justify-center gap-1">
+                                    CO/CD {sortConfig.key === 'co' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('intensidad')}>
+                                <div className="flex items-center justify-center gap-1">
+                                    I {sortConfig.key === 'intensidad' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('estado')}>
+                                <div className="flex items-center justify-center gap-1">
+                                    Est. {sortConfig.key === 'estado' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
                             <th className="px-6 py-4 font-semibold text-right">Acción</th>
                         </tr>
                     </thead>
@@ -190,7 +242,7 @@ export default function PlayersPage() {
                         ) : filteredPlayers.map((player) => (
                             <tr key={player.id} className="hover:bg-white/5 transition-colors group">
                                 <td className="px-6 py-4 font-medium text-emerald-400">{player.alias || player.jugador}</td>
-                                <td className="px-6 py-4 text-center text-gray-400">{calculateAge(player.fecha_nacimiento)}</td>
+                                <td className="px-6 py-4 text-center text-gray-400">{calculateAgeNum(player.fecha_nacimiento) || '-'}</td>
                                 <td className="px-6 py-4 text-gray-400 text-sm">{player.posiciones || '-'}</td>
                                 <td className="px-6 py-4 text-center font-bold">{Math.round(player.ng)}</td>
                                 <td className="px-6 py-4 text-center text-blue-400">{Math.round(player.ef)}</td>
