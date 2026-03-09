@@ -6,6 +6,7 @@ import { UserPlus, Search, Loader2, Edit2, X, Save } from 'lucide-react';
 interface Player {
     id: number;
     jugador: string;
+    celular: string;
     alias: string;
     fecha_nacimiento: string;
     posiciones: string;
@@ -16,6 +17,18 @@ interface Player {
     intensidad: number;
     estado: 'A' | 'I';
 }
+
+const POSITIONS = [
+    { sigla: 'GK', label: 'Arquero' },
+    { sigla: 'DF', label: 'Defensor Central' },
+    { sigla: 'LI', label: 'Laterales (I)' },
+    { sigla: 'LD', label: 'Laterales (D)' },
+    { sigla: 'MC', label: 'Mediocampista' },
+    { sigla: 'MI', label: 'Volantes (I)' },
+    { sigla: 'MD', label: 'Volantes (D)' },
+    { sigla: 'MP', label: 'Mediapunta' },
+    { sigla: 'ST', label: 'Delantero' },
+];
 
 export default function PlayersPage() {
     const [players, setPlayers] = useState<Player[]>([]);
@@ -53,6 +66,7 @@ export default function PlayersPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...newPlayerData,
+                    celular: newPlayerData.celular || '',
                     posiciones: '',
                     ng: 5,
                     ef: 5,
@@ -67,7 +81,7 @@ export default function PlayersPage() {
                 const savedPlayer = await res.json();
                 setPlayers(prev => [...prev, savedPlayer]);
                 setIsCreating(false);
-                setEditingPlayer(savedPlayer); // Transition to auto-save modal
+                setEditingPlayer(savedPlayer);
             }
         } catch (err) {
             console.error('Error creating player:', err);
@@ -77,38 +91,26 @@ export default function PlayersPage() {
     };
 
     const handleUpdatePlayer = async (player: Player) => {
-        if (saving) return; // Prevent concurrent saves
+        if (saving) return;
         setSaving(true);
-
         try {
-            const isNew = !player.id;
             const res = await fetch('/api/players', {
-                method: isNew ? 'POST' : 'PUT',
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(player),
             });
 
             if (res.ok) {
-                if (isNew) {
-                    const savedPlayer = await res.json();
-                    setEditingPlayer(savedPlayer); // SYNC ID BACK TO MODAL
-                    setPlayers(prev => [...prev, savedPlayer]); // Add to list
-                } else {
-                    setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
-                }
+                setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
             } else {
-                fetchPlayers(false); // Sync back on server error
+                fetchPlayers(false);
             }
         } catch (err) {
             console.error('Error updating player:', err);
-            fetchPlayers(false); // Sync back on catch
+            fetchPlayers(false);
         } finally {
             setSaving(false);
         }
-    };
-
-    const createNewPlayer = () => {
-        setIsCreating(true);
     };
 
     const calculateAge = (birthDate: string) => {
@@ -133,7 +135,7 @@ export default function PlayersPage() {
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold gradient-text">Gestión de Jugadores</h1>
                 <button
-                    onClick={createNewPlayer}
+                    onClick={() => setIsCreating(true)}
                     className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-all shadow-lg shadow-emerald-500/20"
                 >
                     <UserPlus className="w-5 h-5" />
@@ -235,11 +237,12 @@ export default function PlayersPage() {
 
 function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSave: (p: Partial<Player>) => void, saving: boolean }) {
     const [nombre, setNombre] = useState('');
+    const [celular, setCelular] = useState('');
     const [fechaNacimiento, setFechaNacimiento] = useState('');
 
     const handleSubmit = () => {
         if (!nombre) return;
-        onSave({ jugador: nombre, fecha_nacimiento: fechaNacimiento });
+        onSave({ jugador: nombre, celular, fecha_nacimiento: fechaNacimiento });
     };
 
     return (
@@ -251,26 +254,38 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
                 </div>
 
                 <div className="p-6 space-y-6">
-                    <div>
-                        <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Completo</label>
-                        <input
-                            type="text"
-                            value={nombre}
-                            onChange={e => setNombre(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
-                            placeholder="Ej: Juan Pérez"
-                            autoFocus
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
-                        <input
-                            type="date"
-                            value={fechaNacimiento}
-                            onChange={e => setFechaNacimiento(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
-                            style={{ colorScheme: 'dark' }}
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Completo</label>
+                            <input
+                                type="text"
+                                value={nombre}
+                                onChange={e => setNombre(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="Ej: Juan Pérez"
+                                autoFocus
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Celular</label>
+                            <input
+                                type="text"
+                                value={celular}
+                                onChange={e => setCelular(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="+34..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
+                            <input
+                                type="date"
+                                value={fechaNacimiento}
+                                onChange={e => setFechaNacimiento(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                style={{ colorScheme: 'dark' }}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -298,21 +313,18 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
 function EditModal({ player, onClose, onSave, saving }: { player: Player, onClose: () => void, onSave: (p: Player) => void, saving: boolean }) {
     const [formData, setFormData] = useState<Player>({ ...player });
 
-    // Important: sync ID if it changes (from 0 to server ID)
     useEffect(() => {
         if (player.id !== formData.id) {
             setFormData(prev => ({ ...prev, id: player.id }));
         }
     }, [player.id, formData.id]);
 
-    // Auto-save logic: Trigger onSave whenever formData changes
     useEffect(() => {
         const timer = setTimeout(() => {
-            // Only trigger if data actually changed compared to the CURRENT player state
             if (JSON.stringify(formData) !== JSON.stringify(player)) {
                 onSave(formData);
             }
-        }, 800); // Slightly longer debounce for stability
+        }, 800);
         return () => clearTimeout(timer);
     }, [formData, onSave, player]);
 
@@ -320,15 +332,26 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const handleTogglePosition = (sigla: string) => {
+        const currentPositions = formData.posiciones ? formData.posiciones.split(',').map(s => s.trim()).filter(Boolean) : [];
+        let newPositions;
+        if (currentPositions.includes(sigla)) {
+            newPositions = currentPositions.filter(s => s !== sigla);
+        } else {
+            newPositions = [...currentPositions, sigla];
+        }
+        handleChange('posiciones', newPositions.join(','));
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="glass w-full max-w-lg rounded-3xl overflow-hidden border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-                    <h2 className="text-xl font-bold">Editar: <span className="text-emerald-400">{player.alias || player.jugador}</span></h2>
+            <div className="glass w-full max-w-xl rounded-3xl overflow-hidden border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5">
+                    <h2 className="text-lg font-bold">Editar: <span className="text-emerald-400">{player.alias || player.jugador}</span></h2>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors"><X className="w-5 h-5" /></button>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-1">
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Completo</label>
@@ -350,6 +373,26 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                                 placeholder="Ej: Juancho"
                             />
                         </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Celular</label>
+                            <input
+                                type="text"
+                                value={formData.celular || ''}
+                                onChange={e => handleChange('celular', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="+34..."
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
+                            <input
+                                type="date"
+                                value={formData.fecha_nacimiento ? formData.fecha_nacimiento.split('T')[0] : ''}
+                                onChange={e => handleChange('fecha_nacimiento', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                style={{ colorScheme: 'dark' }}
+                            />
+                        </div>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
@@ -367,75 +410,75 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
-                            <input
-                                type="date"
-                                value={formData.fecha_nacimiento ? formData.fecha_nacimiento.split('T')[0] : ''}
-                                onChange={e => handleChange('fecha_nacimiento', e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white appearance-none"
-                                style={{ colorScheme: 'dark' }}
-                            />
+                    <div className="col-span-2">
+                        <label className="block text-xs text-gray-400 mb-2 ml-1">Posiciones</label>
+                        <div className="grid grid-cols-3 gap-2 p-4 bg-white/5 rounded-2xl border border-white/5">
+                            {POSITIONS.map(pos => (
+                                <label key={pos.sigla} className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-white/5 rounded-xl transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.posiciones.split(',').map(s => s.trim()).includes(pos.sigla)}
+                                        onChange={() => handleTogglePosition(pos.sigla)}
+                                        className="w-5 h-5 rounded border-white/10 bg-black/40 text-emerald-500 focus:ring-emerald-500"
+                                    />
+                                    <div className="flex flex-col leading-none">
+                                        <span className="text-sm font-bold group-hover:text-emerald-400 transition-colors">{pos.sigla}</span>
+                                        <span className="text-[9px] text-gray-500 uppercase mt-1">{pos.label}</span>
+                                    </div>
+                                </label>
+                            ))}
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-5 gap-3">
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Intensidad (I)</label>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">I</label>
                             <input
                                 type="number"
                                 step="1"
                                 value={Math.round(formData.intensidad)}
                                 onChange={e => handleChange('intensidad', Number(e.target.value))}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Nivel General (NG)</label>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">NG</label>
                             <input
                                 type="number"
                                 step="1"
                                 value={Math.round(formData.ng)}
                                 onChange={e => handleChange('ng', Number(e.target.value))}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Estado Físico (EF)</label>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">EF</label>
                             <input
                                 type="number"
                                 step="1"
                                 value={Math.round(formData.ef)}
                                 onChange={e => handleChange('ef', Number(e.target.value))}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Cap. Ofensiva (CO)</label>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">CO</label>
                             <input
                                 type="number"
                                 step="1"
                                 value={Math.round(formData.co)}
                                 onChange={e => handleChange('co', Number(e.target.value))}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Cap. Defensiva (CD)</label>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">CD</label>
                             <input
                                 type="number"
                                 step="1"
                                 value={Math.round(formData.cd)}
                                 onChange={e => handleChange('cd', Number(e.target.value))}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Posiciones (sep. por coma)</label>
-                            <input
-                                type="text"
-                                value={formData.posiciones}
-                                onChange={e => handleChange('posiciones', e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
-                                placeholder="GK, MC, ST..."
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
                     </div>
