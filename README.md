@@ -43,8 +43,10 @@ LOAD DATA LOCAL INFILE 'jugadores.csv' INTO TABLE jugadores ...
 
 ## 📝 Changelog (Historial de Cambios)
 
-### [1.0.1] - 2026-03-09
-#### Arreglado
+### [1.0.2] - 2026-03-09
+#### Cambiado
+- Rediseño de la página de **Fútbol Semanal** para priorizar el pegado de texto (ideal para copiar/pegar desde WhatsApp en móviles).
+- Eliminación de la carga de archivos .txt para simplificar la experiencia de usuario.
 - Error de construcción en `globals.css` debido a incompatibilidad con Tailwind CSS v4.
 - Migración de directivas `@tailwind` a `@import "tailwindcss"` y configuración `@theme`.
 - Limpieza de archivos de configuración obsoletos (`tailwind.config.ts`, `postcss.config.mjs`).
