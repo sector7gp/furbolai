@@ -23,6 +23,7 @@ export default function PlayersPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
 
     useEffect(() => {
         fetchPlayers();
@@ -42,6 +43,37 @@ export default function PlayersPage() {
                 console.error('Error fetching players:', err);
                 setLoading(false);
             });
+    };
+
+    const handleCreatePlayer = async (newPlayerData: Partial<Player>) => {
+        setSaving(true);
+        try {
+            const res = await fetch('/api/players', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...newPlayerData,
+                    posiciones: '',
+                    ng: 5,
+                    ef: 5,
+                    co: 5,
+                    cd: 5,
+                    intensidad: 5,
+                    estado: 'A'
+                }),
+            });
+
+            if (res.ok) {
+                const savedPlayer = await res.json();
+                setPlayers(prev => [...prev, savedPlayer]);
+                setIsCreating(false);
+                setEditingPlayer(savedPlayer); // Transition to auto-save modal
+            }
+        } catch (err) {
+            console.error('Error creating player:', err);
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleUpdatePlayer = async (player: Player) => {
@@ -76,20 +108,7 @@ export default function PlayersPage() {
     };
 
     const createNewPlayer = () => {
-        const newPlayer: Player = {
-            id: 0,
-            jugador: 'Nuevo Jugador',
-            alias: '',
-            fecha_nacimiento: '',
-            posiciones: '',
-            ng: 5,
-            ef: 5,
-            co: 5,
-            cd: 5,
-            intensidad: 5,
-            estado: 'A'
-        };
-        setEditingPlayer(newPlayer);
+        setIsCreating(true);
     };
 
     const calculateAge = (birthDate: string) => {
@@ -194,6 +213,14 @@ export default function PlayersPage() {
                 </table>
             </div>
 
+            {isCreating && (
+                <NewPlayerModal
+                    onClose={() => setIsCreating(false)}
+                    onSave={handleCreatePlayer}
+                    saving={saving}
+                />
+            )}
+
             {editingPlayer && (
                 <EditModal
                     player={editingPlayer}
@@ -203,6 +230,68 @@ export default function PlayersPage() {
                 />
             )}
         </main>
+    );
+}
+
+function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSave: (p: Partial<Player>) => void, saving: boolean }) {
+    const [nombre, setNombre] = useState('');
+    const [fechaNacimiento, setFechaNacimiento] = useState('');
+
+    const handleSubmit = () => {
+        if (!nombre) return;
+        onSave({ jugador: nombre, fecha_nacimiento: fechaNacimiento });
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="glass w-full max-w-md rounded-3xl overflow-hidden border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                    <h2 className="text-xl font-bold">Nuevo Jugador</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    <div>
+                        <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Completo</label>
+                        <input
+                            type="text"
+                            value={nombre}
+                            onChange={e => setNombre(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                            placeholder="Ej: Juan Pérez"
+                            autoFocus
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
+                        <input
+                            type="date"
+                            value={fechaNacimiento}
+                            onChange={e => setFechaNacimiento(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                            style={{ colorScheme: 'dark' }}
+                        />
+                    </div>
+                </div>
+
+                <div className="p-6 bg-white/5 flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={saving || !nombre}
+                        className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
+                    >
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }
 
