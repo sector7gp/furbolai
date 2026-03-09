@@ -51,7 +51,6 @@ export default function PlayersPage() {
                 body: JSON.stringify(player),
             });
             if (res.ok) {
-                setEditingPlayer(null);
                 fetchPlayers();
             }
         } catch (err) {
@@ -172,105 +171,124 @@ export default function PlayersPage() {
 function EditModal({ player, onClose, onSave }: { player: Player, onClose: () => void, onSave: (p: Player) => void }) {
     const [formData, setFormData] = useState<Player>({ ...player });
 
+    // Auto-save logic: Trigger onSave whenever formData changes
+    // We use a small timeout to avoid hitting the API on every keystroke
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (JSON.stringify(formData) !== JSON.stringify(player)) {
+                onSave(formData);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [formData, onSave, player]);
+
+    const handleChange = (field: keyof Player, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="glass w-full max-w-lg rounded-3xl overflow-hidden border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 border-b border-white/5 flex justify-between items-center">
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
                     <h2 className="text-xl font-bold">Editar: <span className="text-emerald-400">{player.alias || player.jugador}</span></h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full"><X className="w-5 h-5" /></button>
+                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors"><X className="w-5 h-5" /></button>
                 </div>
 
-                <div className="p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs text-gray-400 mb-1">Estado</label>
-                            <select
-                                value={formData.estado}
-                                onChange={e => setFormData({ ...formData, estado: e.target.value as 'A' | 'I' })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 outline-none focus:ring-1 focus:ring-emerald-500"
-                            >
-                                <option value="A" className="bg-gray-900 text-white">Activo (A)</option>
-                                <option value="I" className="bg-gray-900 text-white">Inactivo (I)</option>
-                            </select>
+                <div className="p-6 space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium">Estado del Jugador</span>
+                            <span className="text-xs text-gray-400">{formData.estado === 'A' ? 'Activo (Participa en sorteos)' : 'Inactivo (No disponible)'}</span>
                         </div>
-                        <div>
-                            <label className="block text-xs text-gray-400 mb-1">Intensidad (I)</label>
-                            <input
-                                type="number"
-                                value={formData.intensidad}
-                                onChange={e => setFormData({ ...formData, intensidad: Number(e.target.value) })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 outline-none"
+                        <button
+                            onClick={() => handleChange('estado', formData.estado === 'A' ? 'I' : 'A')}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.estado === 'A' ? 'bg-emerald-600' : 'bg-red-900/40'}`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.estado === 'A' ? 'translate-x-6' : 'translate-x-1'}`}
                             />
-                        </div>
+                        </button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs text-gray-400 mb-1">Nivel General (NG)</label>
+                        <div className="col-span-2">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
                             <input
-                                type="number"
-                                value={formData.ng}
-                                onChange={e => setFormData({ ...formData, ng: Number(e.target.value) })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 outline-none"
+                                type="date"
+                                value={formData.fecha_nacimiento ? formData.fecha_nacimiento.split('T')[0] : ''}
+                                onChange={e => handleChange('fecha_nacimiento', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white appearance-none"
+                                style={{ colorScheme: 'dark' }}
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1">Estado Físico (EF)</label>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Intensidad (I)</label>
                             <input
                                 type="number"
-                                value={formData.ef}
-                                onChange={e => setFormData({ ...formData, ef: Number(e.target.value) })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 outline-none"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs text-gray-400 mb-1">Cap. Ofensiva (CO)</label>
-                            <input
-                                type="number"
-                                value={formData.co}
-                                onChange={e => setFormData({ ...formData, co: Number(e.target.value) })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 outline-none"
+                                step="1"
+                                value={Math.round(formData.intensidad)}
+                                onChange={e => handleChange('intensidad', Number(e.target.value))}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1">Cap. Defensiva (CD)</label>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Nivel General (NG)</label>
                             <input
                                 type="number"
-                                value={formData.cd}
-                                onChange={e => setFormData({ ...formData, cd: Number(e.target.value) })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 outline-none"
+                                step="1"
+                                value={Math.round(formData.ng)}
+                                onChange={e => handleChange('ng', Number(e.target.value))}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
                             />
                         </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs text-gray-400 mb-1">Posiciones (sep. por coma)</label>
-                        <input
-                            type="text"
-                            value={formData.posiciones}
-                            onChange={e => setFormData({ ...formData, posiciones: e.target.value })}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-2 outline-none"
-                        />
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Estado Físico (EF)</label>
+                            <input
+                                type="number"
+                                step="1"
+                                value={Math.round(formData.ef)}
+                                onChange={e => handleChange('ef', Number(e.target.value))}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Cap. Ofensiva (CO)</label>
+                            <input
+                                type="number"
+                                step="1"
+                                value={Math.round(formData.co)}
+                                onChange={e => handleChange('co', Number(e.target.value))}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Cap. Defensiva (CD)</label>
+                            <input
+                                type="number"
+                                step="1"
+                                value={Math.round(formData.cd)}
+                                onChange={e => handleChange('cd', Number(e.target.value))}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Posiciones (sep. por coma)</label>
+                            <input
+                                type="text"
+                                value={formData.posiciones}
+                                onChange={e => handleChange('posiciones', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="GK, MC, ST..."
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <div className="p-6 bg-white/5 flex gap-3">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 py-2 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={() => onSave(formData)}
-                        className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
-                    >
-                        <Save className="w-4 h-4" />
-                        Guardar
-                    </button>
+                <div className="px-6 py-4 bg-white/5 text-center">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-widest flex items-center justify-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Guardado automático activado
+                    </span>
                 </div>
             </div>
         </div>
