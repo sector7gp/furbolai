@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Users, Trophy } from 'lucide-react';
 import { generateTeams, calculateTeamStats } from '@/lib/team-generator';
@@ -18,8 +20,11 @@ export default function WeeklyPage() {
 
     const processNames = (text: string) => {
         const lines = text.split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0 && !line.startsWith('#') && isNaN(Number(line.charAt(0))));
+            .map(line => {
+                // Remove leading numbers, dots, and parentheses (e.g., "1. Juan" -> "Juan", "1) Pedro" -> "Pedro")
+                return line.trim().replace(/^[\d\.\)\-\s]+/, '').trim();
+            })
+            .filter(line => line.length > 0 && !line.startsWith('#'));
         setNames(lines);
     };
 
