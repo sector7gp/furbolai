@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Users, Trophy } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Users, Trophy, Download, Save } from 'lucide-react';
 import { generateTeams, calculateTeamStats } from '@/lib/team-generator';
+import html2canvas from 'html2canvas';
 
 export default function WeeklyPage() {
     const [fileContent, setFileContent] = useState<string>('');
@@ -10,18 +11,24 @@ export default function WeeklyPage() {
     const [loading, setLoading] = useState(false);
     const [teams, setTeams] = useState<any[][] | null>(null);
     const [teamCount, setTeamCount] = useState(2);
+    const [drawId, setDrawId] = useState<number | null>(null);
+    const [goalsEq1, setGoalsEq1] = useState<string>('');
+    const [goalsEq2, setGoalsEq2] = useState<string>('');
+    const [savingGoals, setSavingGoals] = useState(false);
+    const exportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const local = localStorage.getItem('furbolai_config');
-        if (local) {
-            setTeamCount(JSON.parse(local).teamCount || 2);
-        }
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                setTeamCount(data.teamCount || 2);
+            })
+            .catch(console.error);
     }, []);
 
     const processNames = (text: string) => {
         const lines = text.split('\n')
             .map(line => {
-                // Remove leading numbers, dots, and parentheses (e.g., "1. Juan" -> "Juan", "1) Pedro" -> "Pedro")
                 return line.trim().replace(/^[\d\.\)\-\s]+/, '').trim();
             })
             .filter(line => line.length > 0 && !line.startsWith('#'));
@@ -32,6 +39,9 @@ export default function WeeklyPage() {
         setFileContent('');
         setNames([]);
         setTeams(null);
+        setDrawId(null);
+        setGoalsEq1('');
+        setGoalsEq2('');
     };
 
     const handleGenerateTeams = async () => {
@@ -44,7 +54,6 @@ export default function WeeklyPage() {
             });
             const { players, missing } = await res.json();
 
-            // For missing players, create a default player object
             const defaultPlayers = (missing || []).map((name: string, i: number) => ({
                 id: -1 - i,
                 jugador: name,
@@ -59,6 +68,17 @@ export default function WeeklyPage() {
             const allPlayers = [...players, ...defaultPlayers];
             const result = generateTeams(allPlayers, teamCount);
             setTeams(result);
+
+            // Save draw to DB
+            const drawRes = await fetch('/api/draws', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ teams: result })
+            });
+            const drawData = await drawRes.json();
+            if (drawData.id) {
+                setDrawId(drawData.id);
+            }
         } catch (err) {
             console.error('Error generating teams:', err);
         } finally {
@@ -66,60 +86,148 @@ export default function WeeklyPage() {
         }
     };
 
+    const handleSaveGoals = async () => {
+        if (!drawId) return;
+        setSavingGoals(true);
+        try {
+            await fetch('/api/draws', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: drawId,
+                    goles_eq1: goalsEq1 ? parseInt(goalsEq1) : null,
+                    goles_eq2: goalsEq2 ? parseInt(goalsEq2) : null
+                })
+            });
+            alert('¡Resultado guardado!');
+        } catch (err) {
+            console.error('Error saving goals:', err);
+        } finally {
+            setSavingGoals(false);
+        }
+    };
+
+    const exportAsJPG = async () => {
+        if (!exportRef.current) return;
+        try {
+            // Temporarily show the hidden ref for rendering
+            exportRef.current.style.display = 'block';
+            const canvas = await html2canvas(exportRef.current, {
+                scale: 2,
+                backgroundColor: '#0a0a0a'
+            });
+            exportRef.current.style.display = 'none';
+
+            const image = canvas.toDataURL('image/jpeg', 0.9);
+            const link = document.createElement('a');
+            link.href = image;
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.download = `furbolai_equipos_${dateStr}.jpg`;
+            link.click();
+        } catch (err) {
+            console.error('Export error:', err);
+        }
+    };
+
     if (teams) {
         return (
-            <main className="max-w-5xl mx-auto px-4 py-12">
-                <header className="mb-12 flex justify-between items-center">
+            <main className="max-w-5xl mx-auto px-4 py-8">
+                <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl font-bold gradient-text">Equipos Equilibrados</h1>
-                        <p className="text-gray-400 text-sm">Basado en estadísticas y nivel general.</p>
+                        <p className="text-gray-400 text-sm">Sorteo guardado {drawId ? `(#${drawId})` : ''}</p>
                     </div>
-                    <button
-                        onClick={() => setTeams(null)}
-                        className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl transition-all border border-white/5"
-                    >
-                        Volver a editar lista
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={exportAsJPG}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2"
+                        >
+                            <Download className="w-4 h-4" /> Exportar JPG
+                        </button>
+                        <button
+                            onClick={() => { setTeams(null); setDrawId(null); }}
+                            className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl transition-all border border-white/5"
+                        >
+                            Volver
+                        </button>
+                    </div>
                 </header>
 
-                <div className={`grid grid-cols-1 md:grid-cols-${teamCount === 2 ? '2' : '3'} gap-6`}>
+                <div className={`grid grid-cols-1 md:grid-cols-${teamCount === 2 ? '2' : '3'} gap-6 mb-8`}>
                     {teams.map((team, idx) => {
                         const stats = calculateTeamStats(team);
+                        const isWhite = idx === 0;
                         return (
-                            <div key={idx} className="glass p-6 rounded-3xl border-white/5 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform">
-                                    <Trophy className="w-32 h-32" />
-                                </div>
+                            <div key={idx} className={`glass p-6 rounded-3xl border-white/5 relative overflow-hidden group ${isWhite && teamCount === 2 ? 'bg-white/5' : 'bg-black/20'}`}>
                                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                    <span className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-sm">
+                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isWhite && teamCount === 2 ? 'bg-white text-black' : 'bg-black text-white border border-white/20'}`}>
                                         {idx + 1}
                                     </span>
-                                    Equipo {idx + 1}
+                                    {teamCount === 2 ? (isWhite ? "Blanco" : "Negro") : `Equipo ${idx + 1}`}
                                 </h3>
 
-                                <div className="space-y-3 mb-8">
-                                    {team.map(p => (
-                                        <div key={p.id} className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
-                                            <span className="font-medium">{p.alias || p.jugador}</span>
-                                            <span className="text-xs bg-black/40 px-2 py-1 rounded text-gray-400 font-bold">{Math.round(p.ng)} NG</span>
+                                <div className="space-y-2 mb-6">
+                                    {team.map((p, i) => (
+                                        <div key={p.id} className="flex justify-between items-center py-2 px-3 hover:bg-white/5 rounded-lg transition-colors">
+                                            <span className="font-medium">{i + 1}. {p.alias || p.jugador}</span>
+                                            <span className="text-xs text-gray-500 font-bold">{Math.round(p.ng)} NG</span>
                                         </div>
                                     ))}
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2 text-[10px] uppercase tracking-tighter text-gray-500 border-t border-white/5 pt-4">
-                                    <div className="flex justify-between">
-                                        <span>AVG NG</span>
-                                        <span className="text-emerald-500 font-bold">{stats.avgNG.toFixed(1)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>AVG EF</span>
-                                        <span className="text-blue-400 font-bold">{stats.avgEF.toFixed(1)}</span>
-                                    </div>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
+
+                {/* Controles de Resultado */}
+                {teamCount === 2 && drawId && (
+                    <div className="glass p-6 rounded-3xl border-white/5 max-w-xl mx-auto text-center">
+                        <h3 className="text-lg font-bold mb-4">Ingresar Resultado (Opcional)</h3>
+                        <div className="flex items-center justify-center gap-6 mb-6">
+                            <div className="flex flex-col items-center">
+                                <label className="text-xs text-gray-400 mb-2">Blanco</label>
+                                <input type="number" value={goalsEq1} onChange={e => setGoalsEq1(e.target.value)} className="w-16 h-16 text-center text-2xl font-bold bg-white/5 rounded-2xl border border-white/10 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0" />
+                            </div>
+                            <span className="text-2xl font-bold text-gray-600">VS</span>
+                            <div className="flex flex-col items-center">
+                                <label className="text-xs text-gray-400 mb-2">Negro</label>
+                                <input type="number" value={goalsEq2} onChange={e => setGoalsEq2(e.target.value)} className="w-16 h-16 text-center text-2xl font-bold bg-white/5 rounded-2xl border border-white/10 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0" />
+                            </div>
+                        </div>
+                        <button onClick={handleSaveGoals} disabled={savingGoals} className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mx-auto disabled:opacity-50">
+                            {savingGoals ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            Guardar Resultado
+                        </button>
+                    </div>
+                )}
+
+                {/* HIDDEN EXPORT COMPONENT */}
+                <div style={{ display: 'none' }}>
+                    <div ref={exportRef} className="w-[800px] bg-[#0a0a0a] text-white p-12 border border-white/10" style={{ fontFamily: 'sans-serif' }}>
+                        <div className="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
+                            <h2 className="text-4xl font-black bg-gradient-to-r from-emerald-400 to-cyan-400 text-transparent bg-clip-text">FurbolAI</h2>
+                            <p className="text-xl text-gray-400 font-medium">Sorteo del {new Date().toLocaleDateString('es-ES')}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-12">
+                            {teams.slice(0, 2).map((team, idx) => (
+                                <div key={idx} className={`p-8 rounded-3xl ${idx === 0 ? 'bg-white/10' : 'bg-black border border-white/20'}`}>
+                                    <h3 className="text-3xl font-bold mb-8 text-center" style={{ color: idx === 0 ? '#fff' : '#aaa' }}>
+                                        {idx === 0 ? 'Equipo Blanco' : 'Equipo Negro'}
+                                    </h3>
+                                    <ul className="space-y-4 text-xl">
+                                        {team.map((p, i) => (
+                                            <li key={p.id} className="flex gap-4 items-center">
+                                                <span className="text-emerald-500 font-bold w-6">{i + 1}.</span>
+                                                <span className="font-semibold">{p.alias || p.jugador}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
             </main>
         );
     }

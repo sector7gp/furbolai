@@ -11,16 +11,26 @@ export default function SettingsPage() {
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
-        const local = localStorage.getItem('furbolai_config');
-        if (local) {
-            setConfig(JSON.parse(local));
-        }
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                setConfig({ teamCount: data.teamCount || 2 });
+            })
+            .catch(console.error);
     }, []);
 
-    const save = () => {
-        localStorage.setItem('furbolai_config', JSON.stringify(config));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+    const save = async () => {
+        try {
+            await fetch('/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } catch (error) {
+            console.error('Error saving settings:', error);
+        }
     };
 
     return (
