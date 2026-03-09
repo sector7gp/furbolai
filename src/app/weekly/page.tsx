@@ -110,13 +110,11 @@ export default function WeeklyPage() {
     const exportAsJPG = async () => {
         if (!exportRef.current) return;
         try {
-            // Temporarily show the hidden ref for rendering
-            exportRef.current.style.display = 'block';
             const canvas = await html2canvas(exportRef.current, {
                 scale: 2,
-                backgroundColor: '#0a0a0a'
+                backgroundColor: '#0a0a0a',
+                logging: false
             });
-            exportRef.current.style.display = 'none';
 
             const image = canvas.toDataURL('image/jpeg', 0.9);
             const link = document.createElement('a');
@@ -202,23 +200,23 @@ export default function WeeklyPage() {
                 )}
 
                 {/* HIDDEN EXPORT COMPONENT */}
-                <div style={{ display: 'none' }}>
-                    <div ref={exportRef} className="w-[800px] bg-[#0a0a0a] text-white p-12 border border-white/10" style={{ fontFamily: 'sans-serif' }}>
-                        <div className="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
-                            <h2 className="text-4xl font-black bg-gradient-to-r from-emerald-400 to-cyan-400 text-transparent bg-clip-text">FurbolAI</h2>
-                            <p className="text-xl text-gray-400 font-medium">Sorteo del {new Date().toLocaleDateString('es-ES')}</p>
+                <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
+                    <div ref={exportRef} style={{ width: '800px', backgroundColor: '#0a0a0a', color: '#ffffff', padding: '48px', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'sans-serif', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '24px' }}>
+                            <h2 style={{ fontSize: '36px', fontWeight: 900, color: '#34d399', margin: 0 }}>FurbolAI</h2>
+                            <p style={{ fontSize: '20px', color: '#9ca3af', fontWeight: 500, margin: 0 }}>Sorteo del {new Date().toLocaleDateString('es-ES')}</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-12">
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }}>
                             {teams.slice(0, 2).map((team, idx) => (
-                                <div key={idx} className={`p-8 rounded-3xl ${idx === 0 ? 'bg-white/10' : 'bg-black border border-white/20'}`}>
-                                    <h3 className="text-3xl font-bold mb-8 text-center" style={{ color: idx === 0 ? '#fff' : '#aaa' }}>
+                                <div key={idx} style={{ padding: '32px', borderRadius: '24px', backgroundColor: idx === 0 ? 'rgba(255,255,255,0.1)' : '#000000', border: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.2)' }}>
+                                    <h3 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '32px', textAlign: 'center', color: idx === 0 ? '#ffffff' : '#aaaaaa', marginTop: 0 }}>
                                         {idx === 0 ? 'Equipo Blanco' : 'Equipo Negro'}
                                     </h3>
-                                    <ul className="space-y-4 text-xl">
+                                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '20px' }}>
                                         {team.map((p, i) => (
-                                            <li key={p.id} className="flex gap-4 items-center">
-                                                <span className="text-emerald-500 font-bold w-6">{i + 1}.</span>
-                                                <span className="font-semibold">{p.alias || p.jugador}</span>
+                                            <li key={p.id} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                                <span style={{ color: '#10b981', fontWeight: 'bold', width: '24px' }}>{i + 1}.</span>
+                                                <span style={{ fontWeight: 600 }}>{p.alias || p.jugador}</span>
                                             </li>
                                         ))}
                                     </ul>
