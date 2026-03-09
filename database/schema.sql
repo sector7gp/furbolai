@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS jugadores (
     co DECIMAL(4,2), -- Capacidad Ofensiva
     cd DECIMAL(4,2), -- Capacidad Defensiva
     intensidad DECIMAL(4,2), -- Intensidad (I)
+    estado CHAR(1) DEFAULT 'A', -- A para Activo, I para Inactivo
     fecha_alta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_baja TIMESTAMP NULL,
     fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
