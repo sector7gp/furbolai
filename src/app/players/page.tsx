@@ -106,6 +106,9 @@ export default function PlayersPage() {
 
             if (res.ok) {
                 setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
+                if (editingPlayer?.id === player.id) {
+                    setEditingPlayer(player);
+                }
             } else {
                 fetchPlayers(false);
             }
@@ -372,10 +375,11 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
     }, [player.id, formData.id]);
 
     useEffect(() => {
+        const isDifferent = JSON.stringify(formData) !== JSON.stringify(player);
+        if (!isDifferent) return;
+
         const timer = setTimeout(() => {
-            if (JSON.stringify(formData) !== JSON.stringify(player)) {
-                onSave(formData);
-            }
+            onSave(formData);
         }, 800);
         return () => clearTimeout(timer);
     }, [formData, onSave, player]);
