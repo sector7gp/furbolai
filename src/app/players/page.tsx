@@ -21,6 +21,7 @@ export default function PlayersPage() {
     const [players, setPlayers] = useState<Player[]>([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
     useEffect(() => {
@@ -44,10 +45,8 @@ export default function PlayersPage() {
     };
 
     const handleUpdatePlayer = async (player: Player) => {
-        // Optimistic local update
-        if (player.id) {
-            setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
-        }
+        if (saving) return; // Prevent concurrent saves
+        setSaving(true);
 
         try {
             const isNew = !player.id;
@@ -60,16 +59,19 @@ export default function PlayersPage() {
             if (res.ok) {
                 if (isNew) {
                     const savedPlayer = await res.json();
-                    setEditingPlayer(savedPlayer); // Keep modal open with the new ID
-                    fetchPlayers(false); // Silent refresh
+                    setEditingPlayer(savedPlayer); // SYNC ID BACK TO MODAL
+                    setPlayers(prev => [...prev, savedPlayer]); // Add to list
                 } else {
-                    // Update was already applied optimistically
-                    // fetchPlayers(false); // Optional: silent refresh to sync
+                    setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
                 }
+            } else {
+                fetchPlayers(false); // Sync back on server error
             }
         } catch (err) {
             console.error('Error updating player:', err);
-            fetchPlayers(false); // Revert on error
+            fetchPlayers(false); // Sync back on catch
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -197,23 +199,31 @@ export default function PlayersPage() {
                     player={editingPlayer}
                     onClose={() => setEditingPlayer(null)}
                     onSave={handleUpdatePlayer}
+                    saving={saving}
                 />
             )}
         </main>
     );
 }
 
-function EditModal({ player, onClose, onSave }: { player: Player, onClose: () => void, onSave: (p: Player) => void }) {
+function EditModal({ player, onClose, onSave, saving }: { player: Player, onClose: () => void, onSave: (p: Player) => void, saving: boolean }) {
     const [formData, setFormData] = useState<Player>({ ...player });
 
+    // Important: sync ID if it changes (from 0 to server ID)
+    useEffect(() => {
+        if (player.id !== formData.id) {
+            setFormData(prev => ({ ...prev, id: player.id }));
+        }
+    }, [player.id, formData.id]);
+
     // Auto-save logic: Trigger onSave whenever formData changes
-    // We use a small timeout to avoid hitting the API on every keystroke
     useEffect(() => {
         const timer = setTimeout(() => {
+            // Only trigger if data actually changed compared to the CURRENT player state
             if (JSON.stringify(formData) !== JSON.stringify(player)) {
                 onSave(formData);
             }
-        }, 500);
+        }, 800); // Slightly longer debounce for stability
         return () => clearTimeout(timer);
     }, [formData, onSave, player]);
 
@@ -344,8 +354,17 @@ function EditModal({ player, onClose, onSave }: { player: Player, onClose: () =>
 
                 <div className="px-6 py-4 bg-white/5 text-center">
                     <span className="text-[10px] text-gray-500 uppercase tracking-widest flex items-center justify-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Guardado automático activado
+                        {saving ? (
+                            <>
+                                <Loader2 className="w-3 h-3 animate-spin text-emerald-500" />
+                                Guardando...
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Cambios guardados automáticamente
+                            </>
+                        )}
                     </span>
                 </div>
             </div>
