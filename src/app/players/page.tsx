@@ -27,8 +27,8 @@ export default function PlayersPage() {
         fetchPlayers();
     }, []);
 
-    const fetchPlayers = () => {
-        setLoading(true);
+    const fetchPlayers = (showLoading = true) => {
+        if (showLoading) setLoading(true);
         fetch('/api/players')
             .then(res => res.json())
             .then(data => {
@@ -44,18 +44,50 @@ export default function PlayersPage() {
     };
 
     const handleUpdatePlayer = async (player: Player) => {
+        // Optimistic local update
+        if (player.id) {
+            setPlayers(prev => prev.map(p => p.id === player.id ? player : p));
+        }
+
         try {
+            const isNew = !player.id;
             const res = await fetch('/api/players', {
-                method: 'PUT',
+                method: isNew ? 'POST' : 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(player),
             });
+
             if (res.ok) {
-                fetchPlayers();
+                if (isNew) {
+                    const savedPlayer = await res.json();
+                    setEditingPlayer(savedPlayer); // Keep modal open with the new ID
+                    fetchPlayers(false); // Silent refresh
+                } else {
+                    // Update was already applied optimistically
+                    // fetchPlayers(false); // Optional: silent refresh to sync
+                }
             }
         } catch (err) {
             console.error('Error updating player:', err);
+            fetchPlayers(false); // Revert on error
         }
+    };
+
+    const createNewPlayer = () => {
+        const newPlayer: Player = {
+            id: 0,
+            jugador: 'Nuevo Jugador',
+            alias: '',
+            fecha_nacimiento: '',
+            posiciones: '',
+            ng: 5,
+            ef: 5,
+            co: 5,
+            cd: 5,
+            intensidad: 5,
+            estado: 'A'
+        };
+        setEditingPlayer(newPlayer);
     };
 
     const calculateAge = (birthDate: string) => {
@@ -79,7 +111,10 @@ export default function PlayersPage() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold gradient-text">Gestión de Jugadores</h1>
-                <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-all shadow-lg shadow-emerald-500/20">
+                <button
+                    onClick={createNewPlayer}
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-all shadow-lg shadow-emerald-500/20"
+                >
                     <UserPlus className="w-5 h-5" />
                     Nuevo Jugador
                 </button>
@@ -195,6 +230,29 @@ function EditModal({ player, onClose, onSave }: { player: Player, onClose: () =>
                 </div>
 
                 <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Completo</label>
+                            <input
+                                type="text"
+                                value={formData.jugador}
+                                onChange={e => handleChange('jugador', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="Ej: Juan Pérez"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Alias</label>
+                            <input
+                                type="text"
+                                value={formData.alias}
+                                onChange={e => handleChange('alias', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="Ej: Juancho"
+                            />
+                        </div>
+                    </div>
+
                     <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                         <div className="flex flex-col">
                             <span className="text-sm font-medium">Estado del Jugador</span>
