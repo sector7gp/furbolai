@@ -18,10 +18,7 @@ async function migrate() {
         user: config.DB_USER,
         password: config.DB_PASSWORD,
         database: config.DB_NAME,
-        port: Number(config.DB_PORT) || 3306,
-        ssl: {
-            rejectUnauthorized: false
-        }
+        port: Number(config.DB_PORT) || 3306
     });
 
     try {
