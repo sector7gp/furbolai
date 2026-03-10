@@ -35,6 +35,44 @@ const POSITIONS = [
     { sigla: 'ST', label: 'Delantero' },
 ];
 
+function RadarChart({ stats }: { stats: { fitness: number; defensive: number; strengths: number; intensity: number } }) {
+    const size = 32;
+    const center = size / 2;
+    const padding = 2;
+    const maxVal = 5;
+    const scale = (size / 2 - padding) / maxVal;
+
+    const points = [
+        { x: center, y: center - (stats.fitness * scale) },
+        { x: center + (stats.defensive * scale), y: center },
+        { x: center, y: center + (stats.strengths * scale) },
+        { x: center - (stats.intensity * scale), y: center },
+    ];
+
+    const polygonPoints = points.map(p => `${p.x},${p.y}`).join(' ');
+    const gridPoints = [
+        { x: center, y: center - (5 * scale) },
+        { x: center + (5 * scale), y: center },
+        { x: center, y: center + (5 * scale) },
+        { x: center - (5 * scale), y: center },
+    ].map(p => `${p.x},${p.y}`).join(' ');
+
+    return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+            <polygon points={gridPoints} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+            <line x1={center} y1={center - 5 * scale} x2={center} y2={center + 5 * scale} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+            <line x1={center - 5 * scale} y1={center} x2={center + 5 * scale} y2={center} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+            <polygon 
+                points={polygonPoints} 
+                fill="rgba(16, 185, 129, 0.2)" 
+                stroke="rgba(16, 185, 129, 0.6)" 
+                strokeWidth="1.5" 
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
 export default function PlayersPage() {
     const [players, setPlayers] = useState<Player[]>([]);
     const [search, setSearch] = useState('');
@@ -232,6 +270,7 @@ export default function PlayersPage() {
                                     NG {sortConfig.key === 'ng' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
+                            <th className="px-6 py-4 font-semibold text-center">Perfil</th>
                             <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('status')}>
                                 <div className="flex items-center justify-center gap-1">
                                     Est. {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
@@ -243,7 +282,7 @@ export default function PlayersPage() {
                     <tbody className="divide-y divide-white/5">
                         {loading ? (
                             <tr>
-                                <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                                <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
                                     <div className="flex flex-col items-center gap-2">
                                         <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
                                         <span>Cargando jugadores...</span>
@@ -252,7 +291,7 @@ export default function PlayersPage() {
                             </tr>
                         ) : filteredPlayers.length === 0 ? (
                             <tr>
-                                <td colSpan={9} className="px-6 py-12 text-center text-gray-500 italic">
+                                <td colSpan={10} className="px-6 py-12 text-center text-gray-500 italic">
                                     No se encontraron jugadores.
                                 </td>
                             </tr>
@@ -269,6 +308,16 @@ export default function PlayersPage() {
                                     <span className="inline-block px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold text-sm">
                                         {player.ng ? Number(player.ng).toFixed(1) : '-'}
                                     </span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                    <div className="flex justify-center">
+                                        <RadarChart stats={{
+                                            fitness: player.fitness,
+                                            defensive: player.defensive,
+                                            strengths: player.strengths,
+                                            intensity: player.intensity || 0
+                                        }} />
+                                    </div>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`inline-block w-8 py-1 rounded-md text-sm font-bold ${player.status === 'A' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
