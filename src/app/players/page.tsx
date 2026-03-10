@@ -35,45 +35,128 @@ const POSITIONS = [
     { sigla: 'ST', label: 'Delantero' },
 ];
 
-function RadarChart({ stats }: { stats: { fitness: number; defensive: number; strengths: number; intensity: number } }) {
-    const size = 32;
+function RadarChart({ stats, size = 32, showLabels = false }: { stats: { fitness: number; defensive: number; strengths: number; intensity: number }, size?: number, showLabels?: boolean }) {
     const center = size / 2;
-    const padding = 2;
+    const padding = showLabels ? 35 : 2;
     const maxVal = 5;
     const scale = (size / 2 - padding) / maxVal;
 
-    const points = [
-        { x: center, y: center - (stats.fitness * scale) },
-        { x: center + (stats.defensive * scale), y: center },
-        { x: center, y: center + (stats.strengths * scale) },
-        { x: center - (stats.intensity * scale), y: center },
+    const attributes = [
+        { label: 'E. Físico', val: stats.fitness, angle: -Math.PI / 2 },
+        { label: 'Defensa', val: stats.defensive, angle: 0 },
+        { label: 'Fortaleza', val: stats.strengths, angle: Math.PI / 2 },
+        { label: 'Intensidad', val: stats.intensity, angle: Math.PI },
     ];
 
-    const polygonPoints = points.map(p => `${p.x},${p.y}`).join(' ');
-    const gridPoints = [
-        { x: center, y: center - (5 * scale) },
-        { x: center + (5 * scale), y: center },
-        { x: center, y: center + (5 * scale) },
-        { x: center - (5 * scale), y: center },
-    ].map(p => `${p.x},${p.y}`).join(' ');
+    const points = attributes.map(attr => ({
+        x: center + Math.cos(attr.angle) * (attr.val * scale),
+        y: center + Math.sin(attr.angle) * (attr.val * scale)
+    }));
 
+    const polygonPoints = points.map(p => `${p.x},${p.y}`).join(' ');
+    
     return (
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
-            <polygon points={gridPoints} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-            <line x1={center} y1={center - 5 * scale} x2={center} y2={center + 5 * scale} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-            <line x1={center - 5 * scale} y1={center} x2={center + 5 * scale} y2={center} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+            {/* Grid */}
+            {[1, 2, 3, 4, 5].map(lvl => (
+                <polygon 
+                    key={lvl}
+                    points={attributes.map(attr => `${center + Math.cos(attr.angle) * (lvl * scale)},${center + Math.sin(attr.angle) * (lvl * scale)}`).join(' ')}
+                    fill="none" 
+                    stroke="rgba(255,255,255,0.05)" 
+                    strokeWidth="0.5" 
+                />
+            ))}
+            
+            {/* Axis */}
+            {attributes.map((attr, i) => (
+                <line 
+                    key={i}
+                    x1={center} y1={center} 
+                    x2={center + Math.cos(attr.angle) * (5 * scale)} 
+                    y2={center + Math.sin(attr.angle) * (5 * scale)} 
+                    stroke="rgba(255,255,255,0.1)" 
+                    strokeWidth="0.5" 
+                />
+            ))}
+
             <polygon 
                 points={polygonPoints} 
                 fill="rgba(16, 185, 129, 0.2)" 
                 stroke="rgba(16, 185, 129, 0.6)" 
-                strokeWidth="1.5" 
+                strokeWidth={showLabels ? 2 : 1.5} 
                 strokeLinejoin="round"
             />
+
+            {showLabels && attributes.map((attr, i) => {
+                const labelX = center + Math.cos(attr.angle) * (5 * scale + 12);
+                const labelY = center + Math.sin(attr.angle) * (5 * scale + 12);
+                return (
+                    <g key={i}>
+                        <text 
+                            x={labelX} 
+                            y={labelY} 
+                            textAnchor="middle" 
+                            alignmentBaseline="middle"
+                            className="text-[9px] fill-gray-500 font-bold uppercase"
+                        >
+                            {attr.label}
+                        </text>
+                        <circle 
+                            cx={center + Math.cos(attr.angle) * (attr.val * scale)} 
+                            cy={center + Math.sin(attr.angle) * (attr.val * scale)} 
+                            r="3" 
+                            fill="rgb(16, 185, 129)" 
+                        />
+                        <text 
+                            x={center + Math.cos(attr.angle) * (attr.val * scale)} 
+                            y={center + Math.sin(attr.angle) * (attr.val * scale) - 8} 
+                            textAnchor="middle" 
+                            className="text-[10px] fill-white font-black"
+                        >
+                            {attr.val}
+                        </text>
+                    </g>
+                );
+            })}
         </svg>
     );
 }
 
+function RadarModal({ player, onClose }: { player: Player, onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}>
+             <div className="glass p-8 rounded-3xl border border-white/10 flex flex-col items-center gap-6 shadow-2xl scale-110" onClick={e => e.stopPropagation()}>
+                <div className="text-center">
+                    <h3 className="text-xl font-bold text-emerald-400">{player.alias || player.player}</h3>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] mt-1">Perfil Técnico Detallado</p>
+                </div>
+                
+                <div className="p-10 bg-black/20 rounded-full border border-white/5 relative">
+                    <RadarChart 
+                        size={200} 
+                        showLabels={true} 
+                        stats={{
+                            fitness: player.fitness,
+                            defensive: player.defensive,
+                            strengths: player.strengths,
+                            intensity: player.intensity || 0
+                        }} 
+                    />
+                </div>
+                
+                <button 
+                    onClick={onClose}
+                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-8 py-2 rounded-xl transition-all border border-emerald-500/20 font-bold text-sm"
+                >
+                    Cerrar
+                </button>
+             </div>
+        </div>
+    );
+}
 export default function PlayersPage() {
+    const [selectedRadarPlayer, setSelectedRadarPlayer] = useState<Player | null>(null);
     const [players, setPlayers] = useState<Player[]>([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
@@ -310,7 +393,11 @@ export default function PlayersPage() {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
-                                    <div className="flex justify-center">
+                                    <div 
+                                        className="flex justify-center cursor-pointer hover:scale-125 transition-transform"
+                                        onClick={() => setSelectedRadarPlayer(player)}
+                                        title="Ver perfil detallado"
+                                    >
                                         <RadarChart stats={{
                                             fitness: player.fitness,
                                             defensive: player.defensive,
@@ -343,6 +430,13 @@ export default function PlayersPage() {
                     onClose={() => setIsCreating(false)}
                     onSave={handleCreatePlayer}
                     saving={saving}
+                />
+            )}
+
+            {selectedRadarPlayer && (
+                <RadarModal 
+                    player={selectedRadarPlayer}
+                    onClose={() => setSelectedRadarPlayer(null)}
                 />
             )}
 
