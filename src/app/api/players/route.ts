@@ -14,21 +14,21 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { jugador, celular, alias, fecha_nacimiento, posiciones, ng, ef, co, cd, intensidad, estado } = body;
+        const { player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, status, fecha_alta, fecha_baja, fecha_modificacion } = body;
 
         // Format date to YYYY-MM-DD if it exists
         let formattedDate = null;
-        if (fecha_nacimiento) {
-            const dateObj = new Date(fecha_nacimiento);
+        if (birth) {
+            const dateObj = new Date(birth);
             if (!isNaN(dateObj.getTime())) {
                 formattedDate = dateObj.toISOString().split('T')[0];
             }
         }
 
         const [result] = await pool.query(
-            `INSERT INTO jugadores (jugador, celular, alias, fecha_nacimiento, posiciones, ng, ef, co, cd, intensidad, estado) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [jugador, celular, alias, formattedDate, posiciones, ng, ef, co, cd, intensidad, estado || 'A']
+            `INSERT INTO jugadores (player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, status, fecha_alta, fecha_baja, fecha_modificacion) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness, defensive, strengths, status || 'A', fecha_alta || null, fecha_baja || null, fecha_modificacion || null]
         );
 
         return NextResponse.json({ id: (result as any).insertId, ...body });
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { id, jugador, celular, alias, fecha_nacimiento, posiciones, ng, ef, co, cd, intensidad, estado } = body;
+        const { id, player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, status, fecha_alta, fecha_baja, fecha_modificacion } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
@@ -49,8 +49,8 @@ export async function PUT(request: Request) {
 
         // Format date to YYYY-MM-DD if it exists
         let formattedDate = null;
-        if (fecha_nacimiento) {
-            const dateObj = new Date(fecha_nacimiento);
+        if (birth) {
+            const dateObj = new Date(birth);
             if (!isNaN(dateObj.getTime())) {
                 formattedDate = dateObj.toISOString().split('T')[0];
             }
@@ -58,10 +58,10 @@ export async function PUT(request: Request) {
 
         await pool.query(
             `UPDATE jugadores 
-             SET jugador = ?, celular = ?, alias = ?, fecha_nacimiento = ?, posiciones = ?, 
-                 ng = ?, ef = ?, co = ?, cd = ?, intensidad = ?, estado = ?
+             SET player = ?, mobil = ?, alias = ?, birth = ?, pos = ?, 
+                 p_name = ?, mail = ?, t_id = ?, u_id = ?, fitness = ?, defensive = ?, strengths = ?, status = ?, fecha_alta = ?, fecha_baja = ?, fecha_modificacion = ?
              WHERE id = ?`,
-            [jugador, celular, alias, formattedDate, posiciones, ng, ef, co, cd, intensidad, estado, id]
+            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness, defensive, strengths, status, fecha_alta || null, fecha_baja || null, fecha_modificacion || null, id]
         );
 
         return NextResponse.json({ message: 'Player updated successfully' });

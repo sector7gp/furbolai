@@ -6,17 +6,19 @@ import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, Chev
 
 interface Player {
     id: number;
-    jugador: string;
-    celular: string;
+    player: string;
+    mobil: string;
     alias: string;
-    fecha_nacimiento: string;
-    posiciones: string;
-    ng: number;
-    ef: number;
-    co: number;
-    cd: number;
-    intensidad: number;
-    estado: 'A' | 'I';
+    birth: string;
+    pos: string;
+    p_name?: string;
+    mail?: string;
+    t_id?: number;
+    u_id?: string;
+    fitness: number;
+    defensive: number;
+    strengths: number;
+    status: 'A' | 'I';
 }
 
 const POSITIONS = [
@@ -39,7 +41,7 @@ export default function PlayersPage() {
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: keyof Player | 'age'; direction: 'asc' | 'desc' }>({
-        key: 'estado',
+        key: 'status',
         direction: 'asc'
     });
 
@@ -71,14 +73,12 @@ export default function PlayersPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...newPlayerData,
-                    celular: newPlayerData.celular || '',
-                    posiciones: '',
-                    ng: 5,
-                    ef: 5,
-                    co: 5,
-                    cd: 5,
-                    intensidad: 5,
-                    estado: 'A'
+                    mobil: newPlayerData.mobil || '',
+                    pos: '',
+                    fitness: 5,
+                    defensive: 5,
+                    strengths: 5,
+                    status: 'A'
                 }),
             });
 
@@ -143,11 +143,11 @@ export default function PlayersPage() {
     const filteredPlayers = players
         .filter(p =>
             (p.alias && p.alias.toLowerCase().includes(search.toLowerCase())) ||
-            p.jugador.toLowerCase().includes(search.toLowerCase())
+            p.player.toLowerCase().includes(search.toLowerCase())
         )
         .sort((a, b) => {
-            let valA: any = sortConfig.key === 'age' ? calculateAgeNum(a.fecha_nacimiento) : a[sortConfig.key as keyof Player];
-            let valB: any = sortConfig.key === 'age' ? calculateAgeNum(b.fecha_nacimiento) : b[sortConfig.key as keyof Player];
+            let valA: any = sortConfig.key === 'age' ? calculateAgeNum(a.birth) : a[sortConfig.key as keyof Player];
+            let valB: any = sortConfig.key === 'age' ? calculateAgeNum(b.birth) : b[sortConfig.key as keyof Player];
 
             if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -199,34 +199,29 @@ export default function PlayersPage() {
                                     Edad {sortConfig.key === 'age' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
-                            <th className="px-6 py-4 font-semibold cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('posiciones')}>
+                            <th className="px-6 py-4 font-semibold cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('pos')}>
                                 <div className="flex items-center gap-1">
-                                    Posiciones {sortConfig.key === 'posiciones' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                    Posiciones {sortConfig.key === 'pos' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
-                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('ng')}>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('fitness')}>
                                 <div className="flex items-center justify-center gap-1">
-                                    NG {sortConfig.key === 'ng' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                    EF {sortConfig.key === 'fitness' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
-                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('ef')}>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('defensive')}>
                                 <div className="flex items-center justify-center gap-1">
-                                    EF {sortConfig.key === 'ef' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                    CD {sortConfig.key === 'defensive' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
-                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('co')}>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('strengths')}>
                                 <div className="flex items-center justify-center gap-1">
-                                    CO/CD {sortConfig.key === 'co' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                    I {sortConfig.key === 'strengths' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
-                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('intensidad')}>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('status')}>
                                 <div className="flex items-center justify-center gap-1">
-                                    I {sortConfig.key === 'intensidad' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
-                                </div>
-                            </th>
-                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('estado')}>
-                                <div className="flex items-center justify-center gap-1">
-                                    Est. {sortConfig.key === 'estado' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                    Est. {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
                             <th className="px-6 py-4 font-semibold text-right">Acción</th>
@@ -250,16 +245,15 @@ export default function PlayersPage() {
                             </tr>
                         ) : filteredPlayers.map((player) => (
                             <tr key={player.id} className="hover:bg-white/5 transition-colors group">
-                                <td className="px-6 py-4 font-medium text-emerald-400">{player.alias || player.jugador}</td>
-                                <td className="px-6 py-4 text-center text-gray-400">{calculateAgeNum(player.fecha_nacimiento) || '-'}</td>
-                                <td className="px-6 py-4 text-gray-400 text-sm">{player.posiciones || '-'}</td>
-                                <td className="px-6 py-4 text-center font-bold">{Math.round(player.ng)}</td>
-                                <td className="px-6 py-4 text-center text-blue-400">{Math.round(player.ef)}</td>
-                                <td className="px-6 py-4 text-center text-gray-400">{Math.round(player.co)}/{Math.round(player.cd)}</td>
-                                <td className="px-6 py-4 text-center text-orange-400">{Math.round(player.intensidad)}</td>
+                                <td className="px-6 py-4 font-medium text-emerald-400">{player.alias || player.player}</td>
+                                <td className="px-6 py-4 text-center text-gray-400">{calculateAgeNum(player.birth) || '-'}</td>
+                                <td className="px-6 py-4 text-gray-400 text-sm">{player.pos || '-'}</td>
+                                <td className="px-6 py-4 text-center text-blue-400">{Math.round(player.fitness)}</td>
+                                <td className="px-6 py-4 text-center text-gray-400">{Math.round(player.defensive)}</td>
+                                <td className="px-6 py-4 text-center text-orange-400">{Math.round(player.strengths)}</td>
                                 <td className="px-6 py-4 text-center">
-                                    <span className={`inline-block w-8 py-1 rounded-md text-sm font-bold ${player.estado === 'A' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                                        {player.estado}
+                                    <span className={`inline-block w-8 py-1 rounded-md text-sm font-bold ${player.status === 'A' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                                        {player.status}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">
@@ -298,12 +292,12 @@ export default function PlayersPage() {
 
 function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSave: (p: Partial<Player>) => void, saving: boolean }) {
     const [nombre, setNombre] = useState('');
-    const [celular, setCelular] = useState('');
+    const [mobil, setCelular] = useState('');
     const [fechaNacimiento, setFechaNacimiento] = useState('');
 
     const handleSubmit = () => {
         if (!nombre) return;
-        onSave({ jugador: nombre, celular, fecha_nacimiento: fechaNacimiento });
+        onSave({ player: nombre, mobil, birth: fechaNacimiento });
     };
 
     return (
@@ -331,7 +325,7 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Celular</label>
                             <input
                                 type="text"
-                                value={celular}
+                                value={mobil}
                                 onChange={e => setCelular(e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
                                 placeholder="+34..."
@@ -395,21 +389,21 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
     };
 
     const handleTogglePosition = (sigla: string) => {
-        const currentPositions = formData.posiciones ? formData.posiciones.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const currentPositions = formData.pos ? formData.pos.split(',').map(s => s.trim()).filter(Boolean) : [];
         let newPositions;
         if (currentPositions.includes(sigla)) {
             newPositions = currentPositions.filter(s => s !== sigla);
         } else {
             newPositions = [...currentPositions, sigla];
         }
-        handleChange('posiciones', newPositions.join(','));
+        handleChange('pos', newPositions.join(','));
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="glass w-full max-w-xl rounded-3xl overflow-hidden border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
                 <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5">
-                    <h2 className="text-lg font-bold">Editar: <span className="text-emerald-400">{player.alias || player.jugador}</span></h2>
+                    <h2 className="text-lg font-bold">Editar: <span className="text-emerald-400">{player.alias || player.player}</span></h2>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors"><X className="w-5 h-5" /></button>
                 </div>
 
@@ -419,8 +413,8 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Completo</label>
                             <input
                                 type="text"
-                                value={formData.jugador}
-                                onChange={e => handleChange('jugador', e.target.value)}
+                                value={formData.player}
+                                onChange={e => handleChange('player', e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
                                 placeholder="Ej: Juan Pérez"
                             />
@@ -439,8 +433,8 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Celular</label>
                             <input
                                 type="text"
-                                value={formData.celular || ''}
-                                onChange={e => handleChange('celular', e.target.value)}
+                                value={formData.mobil || ''}
+                                onChange={e => handleChange('mobil', e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
                                 placeholder="+34..."
                             />
@@ -449,10 +443,50 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
                             <input
                                 type="date"
-                                value={formData.fecha_nacimiento ? formData.fecha_nacimiento.split('T')[0] : ''}
-                                onChange={e => handleChange('fecha_nacimiento', e.target.value)}
+                                value={formData.birth ? formData.birth.split('T')[0] : ''}
+                                onChange={e => handleChange('birth', e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
                                 style={{ colorScheme: 'dark' }}
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Email</label>
+                            <input
+                                type="email"
+                                value={formData.mail || ''}
+                                onChange={e => handleChange('mail', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="ejemplo@mail.com"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Documento (u_id)</label>
+                            <input
+                                type="text"
+                                value={formData.u_id || ''}
+                                onChange={e => handleChange('u_id', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="12345678"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">ID Equipo (t_id)</label>
+                            <input
+                                type="number"
+                                value={formData.t_id || ''}
+                                onChange={e => handleChange('t_id', parseInt(e.target.value) || 0)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="1"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Posición</label>
+                            <input
+                                type="text"
+                                value={formData.p_name || ''}
+                                onChange={e => handleChange('p_name', e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                placeholder="Lateral Izquierdo"
                             />
                         </div>
                     </div>
@@ -460,14 +494,14 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                     <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                         <div className="flex flex-col">
                             <span className="text-sm font-medium">Estado del Jugador</span>
-                            <span className="text-xs text-gray-400">{formData.estado === 'A' ? 'Activo (Participa en sorteos)' : 'Inactivo (No disponible)'}</span>
+                            <span className="text-xs text-gray-400">{formData.status === 'A' ? 'Activo (Participa en sorteos)' : 'Inactivo (No disponible)'}</span>
                         </div>
                         <button
-                            onClick={() => handleChange('estado', formData.estado === 'A' ? 'I' : 'A')}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.estado === 'A' ? 'bg-emerald-600' : 'bg-red-900/40'}`}
+                            onClick={() => handleChange('status', formData.status === 'A' ? 'I' : 'A')}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.status === 'A' ? 'bg-emerald-600' : 'bg-red-900/40'}`}
                         >
                             <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.estado === 'A' ? 'translate-x-6' : 'translate-x-1'}`}
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.status === 'A' ? 'translate-x-6' : 'translate-x-1'}`}
                             />
                         </button>
                     </div>
@@ -479,7 +513,7 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                                 <label key={pos.sigla} className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-white/5 rounded-xl transition-colors">
                                     <input
                                         type="checkbox"
-                                        checked={formData.posiciones.split(',').map(s => s.trim()).includes(pos.sigla)}
+                                        checked={formData.pos.split(',').map(s => s.trim()).includes(pos.sigla)}
                                         onChange={() => handleTogglePosition(pos.sigla)}
                                         className="w-5 h-5 rounded border-white/10 bg-black/40 text-emerald-500 focus:ring-emerald-500"
                                     />
@@ -492,24 +526,14 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-5 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                         <div>
                             <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">I</label>
                             <input
                                 type="number"
                                 step="1"
-                                value={Math.round(formData.intensidad)}
-                                onChange={e => handleChange('intensidad', Number(e.target.value))}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">NG</label>
-                            <input
-                                type="number"
-                                step="1"
-                                value={Math.round(formData.ng)}
-                                onChange={e => handleChange('ng', Number(e.target.value))}
+                                value={Math.round(formData.strengths)}
+                                onChange={e => handleChange('strengths', Number(e.target.value))}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
@@ -518,18 +542,8 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             <input
                                 type="number"
                                 step="1"
-                                value={Math.round(formData.ef)}
-                                onChange={e => handleChange('ef', Number(e.target.value))}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">CO</label>
-                            <input
-                                type="number"
-                                step="1"
-                                value={Math.round(formData.co)}
-                                onChange={e => handleChange('co', Number(e.target.value))}
+                                value={Math.round(formData.fitness)}
+                                onChange={e => handleChange('fitness', Number(e.target.value))}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
@@ -538,8 +552,8 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             <input
                                 type="number"
                                 step="1"
-                                value={Math.round(formData.cd)}
-                                onChange={e => handleChange('cd', Number(e.target.value))}
+                                value={Math.round(formData.defensive)}
+                                onChange={e => handleChange('defensive', Number(e.target.value))}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>

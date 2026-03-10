@@ -11,12 +11,12 @@ export async function POST(request: Request) {
         // Search for players whose alias or jugador matches any of the names
         // Using a simple query for now. This could be optimized.
         const [rows]: any = await pool.query(
-            'SELECT * FROM jugadores WHERE (jugador IN (?) OR alias IN (?)) AND fecha_baja IS NULL',
+            'SELECT * FROM jugadores WHERE (player IN (?) OR alias IN (?)) AND fecha_baja IS NULL',
             [names, names]
         );
 
         // Map found players to original requested names to handle missing ones
-        const foundNames = new Set(rows.map((p: any) => p.jugador.toLowerCase()).concat(rows.map((p: any) => p.alias?.toLowerCase())));
+        const foundNames = new Set(rows.map((p: any) => p.player.toLowerCase()).concat(rows.map((p: any) => p.alias?.toLowerCase())));
 
         const missing = names.filter(n => !foundNames.has(n.toLowerCase()));
 
