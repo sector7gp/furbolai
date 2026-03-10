@@ -11,7 +11,8 @@ export async function POST(request: Request) {
         // Search for players whose alias or jugador matches any of the names
         // Using a simple query for now. This could be optimized.
         const [rows]: any = await pool.query(
-            'SELECT * FROM jugadores WHERE (player IN (?) OR alias IN (?)) AND fecha_baja IS NULL',
+            `SELECT id, player, mobil, alias, birth, pos, fitness, defensive, strengths, status
+             FROM jugadores WHERE (player IN (?) OR alias IN (?)) AND status = 'A'`,
             [names, names]
         );
 

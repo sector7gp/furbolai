@@ -3,7 +3,7 @@ import pool from '@/lib/db';
 
 export async function GET() {
     try {
-        const [rows] = await pool.query('SELECT * FROM jugadores WHERE fecha_baja IS NULL ORDER BY alias ASC');
+        const [rows] = await pool.query("SELECT * FROM jugadores WHERE status != 'D' ORDER BY alias ASC");
         return NextResponse.json(rows);
     } catch (error) {
         console.error('Database Error:', error);
@@ -26,9 +26,9 @@ export async function POST(request: Request) {
         }
 
         const [result] = await pool.query(
-            `INSERT INTO jugadores (player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, status, fecha_alta, fecha_baja, fecha_modificacion) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness, defensive, strengths, status || 'A', fecha_alta || null, fecha_baja || null, fecha_modificacion || null]
+            `INSERT INTO jugadores (player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, status) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness || 5, defensive || 5, strengths || 5, status || 'A']
         );
 
         return NextResponse.json({ id: (result as any).insertId, ...body });
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { id, player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, status, fecha_alta, fecha_baja, fecha_modificacion } = body;
+        const { id, player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, status } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
@@ -59,9 +59,9 @@ export async function PUT(request: Request) {
         await pool.query(
             `UPDATE jugadores 
              SET player = ?, mobil = ?, alias = ?, birth = ?, pos = ?, 
-                 p_name = ?, mail = ?, t_id = ?, u_id = ?, fitness = ?, defensive = ?, strengths = ?, status = ?, fecha_alta = ?, fecha_baja = ?, fecha_modificacion = ?
+                 p_name = ?, mail = ?, t_id = ?, u_id = ?, fitness = ?, defensive = ?, strengths = ?, status = ?
              WHERE id = ?`,
-            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness, defensive, strengths, status, fecha_alta || null, fecha_baja || null, fecha_modificacion || null, id]
+            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness, defensive, strengths, status, id]
         );
 
         return NextResponse.json({ message: 'Player updated successfully' });

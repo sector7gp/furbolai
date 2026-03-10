@@ -389,21 +389,41 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
     };
 
     const handleTogglePosition = (sigla: string) => {
-        const currentPositions = formData.pos ? formData.pos.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const currentPositions = formData.p_name ? formData.p_name.split(',').map(s => s.trim()).filter(Boolean) : [];
         let newPositions;
         if (currentPositions.includes(sigla)) {
             newPositions = currentPositions.filter(s => s !== sigla);
         } else {
             newPositions = [...currentPositions, sigla];
         }
-        handleChange('pos', newPositions.join(','));
+        handleChange('p_name', newPositions.join(','));
+    };
+
+    const calculateAge = (birthDate: string) => {
+        if (!birthDate) return '-';
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        return age;
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="glass w-full max-w-xl rounded-3xl overflow-hidden border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
                 <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5">
-                    <h2 className="text-lg font-bold">Editar: <span className="text-emerald-400">{player.alias || player.player}</span></h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-lg font-bold">Editar: <span className="text-emerald-400">{player.alias || player.player}</span></h2>
+                        <button
+                            onClick={() => handleChange('status', formData.status === 'A' ? 'I' : 'A')}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${formData.status === 'A' ? 'bg-emerald-600' : 'bg-red-900/40'}`}
+                        >
+                            <span
+                                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${formData.status === 'A' ? 'translate-x-5' : 'translate-x-1'}`}
+                            />
+                        </button>
+                    </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors"><X className="w-5 h-5" /></button>
                 </div>
 
@@ -469,8 +489,11 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                                 placeholder="12345678"
                             />
                         </div>
-                        <div className="col-span-1">
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">ID Equipo (t_id)</label>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">ID Equipo</label>
                             <input
                                 type="number"
                                 value={formData.t_id || ''}
@@ -479,48 +502,38 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                                 placeholder="1"
                             />
                         </div>
-                        <div className="col-span-1">
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Posición</label>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Casaca</label>
                             <input
                                 type="text"
-                                value={formData.p_name || ''}
-                                onChange={e => handleChange('p_name', e.target.value)}
+                                value={formData.pos || ''}
+                                onChange={e => handleChange('pos', e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
-                                placeholder="Lateral Izquierdo"
+                                placeholder="10"
                             />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Edad</label>
+                            <div className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-center">
+                                {calculateAge(formData.birth)}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium">Estado del Jugador</span>
-                            <span className="text-xs text-gray-400">{formData.status === 'A' ? 'Activo (Participa en sorteos)' : 'Inactivo (No disponible)'}</span>
-                        </div>
-                        <button
-                            onClick={() => handleChange('status', formData.status === 'A' ? 'I' : 'A')}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.status === 'A' ? 'bg-emerald-600' : 'bg-red-900/40'}`}
-                        >
-                            <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.status === 'A' ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                        </button>
-                    </div>
+
 
                     <div className="col-span-2">
                         <label className="block text-xs text-gray-400 mb-2 ml-1">Posiciones</label>
-                        <div className="grid grid-cols-3 gap-2 p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="grid grid-cols-6 gap-2 p-2 bg-white/5 rounded-2xl border border-white/5">
                             {POSITIONS.map(pos => (
-                                <label key={pos.sigla} className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-white/5 rounded-xl transition-colors">
+                                <label key={pos.sigla} className="flex flex-col items-center gap-1 cursor-pointer group p-2 hover:bg-white/5 rounded-xl transition-colors">
                                     <input
                                         type="checkbox"
-                                        checked={formData.pos.split(',').map(s => s.trim()).includes(pos.sigla)}
+                                        checked={(formData.p_name || '').split(',').map(s => s.trim()).includes(pos.sigla)}
                                         onChange={() => handleTogglePosition(pos.sigla)}
-                                        className="w-5 h-5 rounded border-white/10 bg-black/40 text-emerald-500 focus:ring-emerald-500"
+                                        className="w-4 h-4 rounded border-white/10 bg-black/40 text-emerald-500 focus:ring-emerald-500"
                                     />
-                                    <div className="flex flex-col leading-none">
-                                        <span className="text-sm font-bold group-hover:text-emerald-400 transition-colors">{pos.sigla}</span>
-                                        <span className="text-[9px] text-gray-500 uppercase mt-1">{pos.label}</span>
-                                    </div>
+                                    <span className="text-[10px] font-bold group-hover:text-emerald-400 transition-colors">{pos.sigla}</span>
                                 </label>
                             ))}
                         </div>
@@ -528,17 +541,7 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
 
                     <div className="grid grid-cols-3 gap-3">
                         <div>
-                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">I</label>
-                            <input
-                                type="number"
-                                step="1"
-                                value={Math.round(formData.strengths)}
-                                onChange={e => handleChange('strengths', Number(e.target.value))}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">EF</label>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">Estado Físico</label>
                             <input
                                 type="number"
                                 step="1"
@@ -548,12 +551,22 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">CD</label>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">Defensa</label>
                             <input
                                 type="number"
                                 step="1"
                                 value={Math.round(formData.defensive)}
                                 onChange={e => handleChange('defensive', Number(e.target.value))}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">Fortaleza</label>
+                            <input
+                                type="number"
+                                step="1"
+                                value={Math.round(formData.strengths)}
+                                onChange={e => handleChange('strengths', Number(e.target.value))}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
