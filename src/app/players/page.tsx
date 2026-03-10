@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft } from 'lucide-react';
+import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft, RefreshCcw } from 'lucide-react';
 
 interface Player {
     id: number;
@@ -18,6 +18,8 @@ interface Player {
     fitness: number;
     defensive: number;
     strengths: number;
+    intensity: number;
+    ng: number;
     status: 'A' | 'I';
 }
 
@@ -78,6 +80,7 @@ export default function PlayersPage() {
                     fitness: 5,
                     defensive: 5,
                     strengths: 5,
+                    intensity: 5,
                     status: 'A'
                 }),
             });
@@ -216,7 +219,17 @@ export default function PlayersPage() {
                             </th>
                             <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('strengths')}>
                                 <div className="flex items-center justify-center gap-1">
-                                    I {sortConfig.key === 'strengths' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                    F {sortConfig.key === 'strengths' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('intensity')}>
+                                <div className="flex items-center justify-center gap-1">
+                                    INT {sortConfig.key === 'intensity' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                </div>
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('status')}>
+                                <div className="flex items-center justify-center gap-1">
+                                    NG {sortConfig.key === 'ng' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
                             <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('status')}>
@@ -251,6 +264,12 @@ export default function PlayersPage() {
                                 <td className="px-6 py-4 text-center text-blue-400">{Math.round(player.fitness)}</td>
                                 <td className="px-6 py-4 text-center text-gray-400">{Math.round(player.defensive)}</td>
                                 <td className="px-6 py-4 text-center text-orange-400">{Math.round(player.strengths)}</td>
+                                <td className="px-6 py-4 text-center text-purple-400">{Math.round(player.intensity || 0)}</td>
+                                <td className="px-6 py-4 text-center">
+                                    <span className="inline-block px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold text-sm">
+                                        {player.ng ? Number(player.ng).toFixed(1) : '-'}
+                                    </span>
+                                </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`inline-block w-8 py-1 rounded-md text-sm font-bold ${player.status === 'A' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
                                         {player.status}
@@ -385,7 +404,14 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
     }, [formData, onSave, player]);
 
     const handleChange = (field: keyof Player, value: any) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        let finalValue = value;
+        
+        // Clamp numerical technical stats to 0-5
+        if (['fitness', 'defensive', 'strengths', 'intensity'].includes(field as string)) {
+            finalValue = Math.max(0, Math.min(5, Number(value)));
+        }
+
+        setFormData(prev => ({ ...prev, [field]: finalValue }));
     };
 
     const handleTogglePosition = (sigla: string) => {
@@ -407,6 +433,28 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
         const m = today.getMonth() - birth.getMonth();
         if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
         return age;
+    };
+
+    const handleIndividualRecalculate = async () => {
+        try {
+            const res = await fetch('/api/players/calculate-ng', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fitness: formData.fitness,
+                    defensive: formData.defensive,
+                    strengths: formData.strengths,
+                    intensity: formData.intensity,
+                    birth: formData.birth ? formData.birth.split('T')[0] : ''
+                })
+            });
+            const data = await res.json();
+            if (data.ng !== undefined) {
+                setFormData(prev => ({ ...prev, ng: data.ng }));
+            }
+        } catch (error) {
+            console.error('Error recalculating NG:', error);
+        }
     };
 
     return (
@@ -539,11 +587,13 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-4 gap-3">
                         <div>
-                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">Estado Físico</label>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">E. Físico</label>
                             <input
                                 type="number"
+                                min="0"
+                                max="5"
                                 step="1"
                                 value={Math.round(formData.fitness)}
                                 onChange={e => handleChange('fitness', Number(e.target.value))}
@@ -554,6 +604,8 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">Defensa</label>
                             <input
                                 type="number"
+                                min="0"
+                                max="5"
                                 step="1"
                                 value={Math.round(formData.defensive)}
                                 onChange={e => handleChange('defensive', Number(e.target.value))}
@@ -564,11 +616,44 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">Fortaleza</label>
                             <input
                                 type="number"
+                                min="0"
+                                max="5"
                                 step="1"
                                 value={Math.round(formData.strengths)}
                                 onChange={e => handleChange('strengths', Number(e.target.value))}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
                             />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] text-gray-500 uppercase mb-1 ml-1">Intensidad</label>
+                            <input
+                                type="number"
+                                min="0"
+                                max="5"
+                                step="1"
+                                value={Math.round(formData.intensity || 0)}
+                                onChange={e => handleChange('intensity', Number(e.target.value))}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-center outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-emerald-400 text-left">Nivel General (NG)</span>
+                            <span className="text-xs text-gray-500 italic text-left">Calculado según atributos y edad</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <button 
+                                onClick={handleIndividualRecalculate}
+                                className="p-2 hover:bg-emerald-500/10 rounded-full transition-colors text-emerald-400 group"
+                                title="Recalcular según configuración actual"
+                            >
+                                <RefreshCcw className="w-5 h-5 group-active:rotate-180 transition-transform duration-500" />
+                            </button>
+                            <div className="text-2xl font-black text-emerald-400">
+                                {formData.ng ? Number(formData.ng).toFixed(1) : '-'}
+                            </div>
                         </div>
                     </div>
                 </div>

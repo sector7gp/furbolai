@@ -11,9 +11,9 @@ CREATE TABLE IF NOT EXISTS jugadores (
     alias VARCHAR(100),
     birth DATE,
     pos TEXT, -- Comma separated values (e.g., GK,MC,ST)
-    fitness DECIMAL(4,2),
-    defensive DECIMAL(4,2),
-    strengths DECIMAL(4,2),
+    fitness DECIMAL(4),
+    defensive DECIMAL(4),
+    strengths DECIMAL(4),
     status CHAR(1) DEFAULT 'A', -- A para Activo, I para Inactivo
     fecha_alta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_baja TIMESTAMP NULL,
@@ -22,12 +22,20 @@ CREATE TABLE IF NOT EXISTS jugadores (
     mail VARCHAR(255),
     t_id INT(11),
     u_id VARCHAR(50),
-    intensity DECIMAL(10,0)
+    intensity DECIMAL(10,0),
+    ng DECIMAL(3,1)
 );
 
 CREATE TABLE IF NOT EXISTS configuracion (
     id INT PRIMARY KEY DEFAULT 1,
     team_count INT NOT NULL DEFAULT 2,
+    w_fitness FLOAT DEFAULT 1.0,
+    w_defensive FLOAT DEFAULT 1.0,
+    w_strengths FLOAT DEFAULT 1.0,
+    w_intensity FLOAT DEFAULT 1.0,
+    age_min INT DEFAULT 20,
+    age_max INT DEFAULT 32,
+    age_decay FLOAT DEFAULT 0.02,
     fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
