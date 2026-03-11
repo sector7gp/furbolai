@@ -3,17 +3,19 @@ const fs = require('fs');
 const path = require('path');
 
 try {
-    let version;
+    const pkg = require('../package.json');
+    let version = pkg.version || '0.0.0';
+    let gitHash = 'no-git';
+
     try {
-        // Try to get the latest git tag
-        version = execSync('git describe --tags --abbrev=0').toString().trim();
+        gitHash = execSync('git rev-parse --short HEAD').toString().trim();
     } catch (e) {
-        // Fallback to git hash if no tags found
-        version = execSync('git rev-parse --short HEAD').toString().trim();
+        // Ignorar si git falla
     }
 
     const versionData = {
         version: version,
+        gitHash: gitHash,
         buildDate: new Date().toISOString()
     };
 
@@ -26,17 +28,7 @@ try {
         path.join(publicDir, 'version.json'),
         JSON.stringify(versionData, null, 2)
     );
-    console.log(`Version ${version} captured to public/version.json`);
+    console.log(`Version ${version} (git: ${gitHash}) captured to public/version.json`);
 } catch (error) {
-    console.error('Error capturing git version:', error.message);
-    // Dynamic fallback to package.json version if git fails
-    const pkg = require('../package.json');
-    const versionData = {
-        version: pkg.version || 'unknown',
-        buildDate: new Date().toISOString()
-    };
-    fs.writeFileSync(
-        path.join(__dirname, '../public/version.json'),
-        JSON.stringify(versionData, null, 2)
-    );
+    console.error('Error capturing version:', error.message);
 }
