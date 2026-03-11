@@ -69,6 +69,17 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ## 📝 Changelog (Historial de Cambios)
 
+### [1.1.2] - 2026-03-11
+#### Añadido
+- **Balanceo Táctico Inteligente**: El algoritmo de sorteo ahora prioriza la distribución de Arqueros (**GK**) y posiciones tácticas clave (**2, 3, 4, 5, 7, 9, 11**).
+- **Prioridad del Arquero**: Se garantiza que el arquero (detectado como "1", "GK" o "Arquero") sea siempre el primer integrante de cada lista.
+- **Visualización de Roles**: La tabla de resultados muestra el nombre completo de la posición (**p_name**) para un mejor contexto táctico.
+- **Exportación Optimizada**: Nueva generación de imagen JPG para WhatsApp, simplificada para evitar recortes y con el **Promedio NG** destacado por equipo.
+
+#### Cambiado
+- **Integración con Base de Datos**: El sorteo semanal ahora recupera dinámicamente el NG y los atributos técnicos de los jugadores registrados.
+- **Layout de Resultados**: Rediseño a dos columnas para facilitar la comparación de fuerzas entre equipos.
+
 ### [1.1.1] - 2026-03-11
 #### Añadido
 - **Selección de Posiciones (UI)**: Nuevo diseño basado en **Chips/Pills** para una selección de posiciones más compacta y moderna.

@@ -182,9 +182,10 @@ export default function WeeklyPage() {
                                         {idx + 1}
                                     </span>
                                     {teamCount === 2 ? (isWhite ? "Blanco" : "Negro") : `Equipo ${idx + 1}`}
-                                    <span className="ml-auto bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-xl text-sm font-bold border border-emerald-500/20">
-                                        {stats.avgNG.toFixed(1)} NG Prom.
-                                    </span>
+                                    <div className="ml-auto bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-2xl text-sm font-black border border-emerald-500/30 shadow-lg shadow-emerald-500/10 flex flex-col items-center leading-tight">
+                                        <span className="text-[10px] uppercase opacity-60 tracking-tighter">Promedio NG</span>
+                                        {stats.avgNG.toFixed(1)}
+                                    </div>
                                 </h3>
 
                                 <div className="space-y-1 mb-6">
@@ -194,12 +195,15 @@ export default function WeeklyPage() {
                                                 {i + 1}. {p.alias || p.jugador}
                                             </span>
                                             <div className="flex items-center gap-2 font-mono text-[11px]">
-                                                <span className="text-blue-400 w-4 text-center" title="EF">{Math.round(p.fitness)}</span>
-                                                <span className="text-gray-400 w-4 text-center" title="CD">{Math.round(p.defensive)}</span>
-                                                <span className="text-orange-400 w-4 text-center" title="F">{Math.round(p.strengths)}</span>
-                                                <span className="text-purple-400 w-4 text-center" title="INT">{Math.round(p.intensity || 0)}</span>
-                                                <span className="text-emerald-400 font-bold ml-1 bg-emerald-400/10 px-1.5 py-0.5 rounded min-w-[32px] text-center">
-                                                    {p.ng ? Number(p.ng).toFixed(1) : '5.0'}
+                                                <span className="text-gray-500 font-bold w-12 text-left overflow-hidden whitespace-nowrap" title="Posición">
+                                                    {p.p_name || p.pos?.split(',')[0]?.toUpperCase() || '-'}
+                                                </span>
+                                                <span className="text-blue-400 w-4 text-center" title="EF">{Math.round(p.fitness ?? 5)}</span>
+                                                <span className="text-gray-400 w-4 text-center" title="CD">{Math.round(p.defensive ?? 5)}</span>
+                                                <span className="text-orange-400 w-4 text-center" title="F">{Math.round(p.strengths ?? 5)}</span>
+                                                <span className="text-purple-400 w-4 text-center" title="INT">{Math.round(p.intensity ?? 5)}</span>
+                                                <span className="text-emerald-400 font-bold ml-1 bg-emerald-400/10 px-1.5 py-0.5 rounded min-w-[32px] text-center shadow-inner">
+                                                    {Number(p.ng || 5).toFixed(1)}
                                                 </span>
                                             </div>
                                         </div>
@@ -242,17 +246,25 @@ export default function WeeklyPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }}>
                             {teams.slice(0, 2).map((team, idx) => (
                                 <div key={idx} style={{ padding: '32px', borderRadius: '24px', backgroundColor: idx === 0 ? 'rgba(255,255,255,0.1)' : '#000000', border: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.2)' }}>
-                                    <h3 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '32px', textAlign: 'center', color: idx === 0 ? '#ffffff' : '#aaaaaa', marginTop: 0 }}>
+                                    <h3 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '32px', textAlign: 'center', color: idx === 0 ? '#ffffff' : '#aaaaaa', marginTop: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>
                                         {idx === 0 ? 'Equipo Blanco' : 'Equipo Negro'}
                                     </h3>
-                                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '20px' }}>
+                                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '20px' }}>
                                         {team.map((p, i) => (
-                                            <li key={p.id} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                                <span style={{ color: '#10b981', fontWeight: 'bold', width: '24px' }}>{i + 1}.</span>
-                                                <span style={{ fontWeight: 600 }}>{p.alias || p.jugador}</span>
+                                            <li key={p.id} style={{ display: 'flex', gap: '16px', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <span style={{ color: '#10b981', fontWeight: 900, width: '28px' }}>{i + 1}.</span>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontWeight: 700, fontSize: '22px' }}>{p.alias || p.jugador}</span>
+                                                    <span style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', fontWeight: 800 }}>{p.p_name || p.pos?.split(',')[0] || '-'}</span>
+                                                </div>
                                             </li>
                                         ))}
                                     </ul>
+                                    {/* Average NG Badge - FULL WIDTH */}
+                                    <div style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#34d399', padding: '20px', borderRadius: '20px', border: '1px solid rgba(52,211,153,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: 900, letterSpacing: '2px', opacity: 0.8 }}>PROMEDIO NG</span>
+                                        <span style={{ fontSize: '32px', fontWeight: 900 }}>{calculateTeamStats(team).avgNG.toFixed(1)}</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>

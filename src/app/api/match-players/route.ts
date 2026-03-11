@@ -8,29 +8,32 @@ export async function POST(request: Request) {
             return NextResponse.json({ players: [] });
         }
 
-        // Search for players whose alias or jugador matches any of the names
-        // Normalize names for comparison
-        const cleanNames = names.map(n => n.trim().toLowerCase());
-        
-        const [rows]: any = await pool.query(
-            `SELECT id, player AS jugador, alias, ng, fitness, defensive, strengths, intensity, status
-             FROM jugadores 
-             WHERE (LOWER(player) IN (?) OR LOWER(alias) IN (?)) 
-             AND status = 'A'`,
-            [cleanNames, cleanNames]
-        );
+        // Match each name individually to ensure 1:1 mapping
+        const finalPlayers = [];
+        const missing = [];
 
-        // Map found players to original requested names to handle missing ones
-        const foundNames = new Set();
-        rows.forEach((p: any) => {
-            foundNames.add(p.jugador.toLowerCase());
-            if (p.alias) foundNames.add(p.alias.toLowerCase());
-        });
+        for (const name of names) {
+            const cleanName = name.trim();
+            if (!cleanName) continue;
 
-        const missing = names.filter(n => !foundNames.has(n.trim().toLowerCase()));
+            const [rows]: any = await pool.query(
+                `SELECT id, player AS jugador, alias, ng, fitness, defensive, strengths, intensity, pos, p_name, status
+                 FROM jugadores 
+                 WHERE (LOWER(player) = ? OR LOWER(alias) = ?) 
+                 AND status = 'A'
+                 LIMIT 1`,
+                [cleanName.toLowerCase(), cleanName.toLowerCase()]
+            );
+
+            if (rows.length > 0) {
+                finalPlayers.push(rows[0]);
+            } else {
+                missing.push(cleanName);
+            }
+        }
 
         return NextResponse.json({
-            players: rows,
+            players: finalPlayers,
             missing: missing
         });
     } catch (error) {
