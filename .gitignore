@@ -64,3 +64,4 @@ yarn-error.log*
 *.db
 *.sqlite
 node_modules
+/public/version.json
