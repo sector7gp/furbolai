@@ -54,37 +54,37 @@ function RadarChart({ stats, size = 32, showLabels = false }: { stats: { fitness
     }));
 
     const polygonPoints = points.map(p => `${p.x},${p.y}`).join(' ');
-    
+
     return (
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
             {/* Grid */}
             {[1, 2, 3, 4, 5].map(lvl => (
-                <polygon 
+                <polygon
                     key={lvl}
                     points={attributes.map(attr => `${center + Math.cos(attr.angle) * (lvl * scale)},${center + Math.sin(attr.angle) * (lvl * scale)}`).join(' ')}
-                    fill="none" 
-                    stroke="rgba(255,255,255,0.05)" 
-                    strokeWidth="0.5" 
-                />
-            ))}
-            
-            {/* Axis */}
-            {attributes.map((attr, i) => (
-                <line 
-                    key={i}
-                    x1={center} y1={center} 
-                    x2={center + Math.cos(attr.angle) * (5 * scale)} 
-                    y2={center + Math.sin(attr.angle) * (5 * scale)} 
-                    stroke="rgba(255,255,255,0.1)" 
-                    strokeWidth="0.5" 
+                    fill="none"
+                    stroke="rgba(255,255,255,0.05)"
+                    strokeWidth="0.5"
                 />
             ))}
 
-            <polygon 
-                points={polygonPoints} 
-                fill="rgba(16, 185, 129, 0.2)" 
-                stroke="rgba(16, 185, 129, 0.6)" 
-                strokeWidth={showLabels ? 2 : 1.5} 
+            {/* Axis */}
+            {attributes.map((attr, i) => (
+                <line
+                    key={i}
+                    x1={center} y1={center}
+                    x2={center + Math.cos(attr.angle) * (5 * scale)}
+                    y2={center + Math.sin(attr.angle) * (5 * scale)}
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth="0.5"
+                />
+            ))}
+
+            <polygon
+                points={polygonPoints}
+                fill="rgba(16, 185, 129, 0.2)"
+                stroke="rgba(16, 185, 129, 0.6)"
+                strokeWidth={showLabels ? 2 : 1.5}
                 strokeLinejoin="round"
             />
 
@@ -93,25 +93,25 @@ function RadarChart({ stats, size = 32, showLabels = false }: { stats: { fitness
                 const labelY = center + Math.sin(attr.angle) * (5 * scale + 12);
                 return (
                     <g key={i}>
-                        <text 
-                            x={labelX} 
-                            y={labelY} 
-                            textAnchor="middle" 
+                        <text
+                            x={labelX}
+                            y={labelY}
+                            textAnchor="middle"
                             alignmentBaseline="middle"
                             className="text-[9px] fill-gray-500 font-bold uppercase"
                         >
                             {attr.label}
                         </text>
-                        <circle 
-                            cx={center + Math.cos(attr.angle) * (attr.val * scale)} 
-                            cy={center + Math.sin(attr.angle) * (attr.val * scale)} 
-                            r="3" 
-                            fill="rgb(16, 185, 129)" 
+                        <circle
+                            cx={center + Math.cos(attr.angle) * (attr.val * scale)}
+                            cy={center + Math.sin(attr.angle) * (attr.val * scale)}
+                            r="3"
+                            fill="rgb(16, 185, 129)"
                         />
-                        <text 
-                            x={center + Math.cos(attr.angle) * (attr.val * scale)} 
-                            y={center + Math.sin(attr.angle) * (attr.val * scale) - 8} 
-                            textAnchor="middle" 
+                        <text
+                            x={center + Math.cos(attr.angle) * (attr.val * scale)}
+                            y={center + Math.sin(attr.angle) * (attr.val * scale) - 8}
+                            textAnchor="middle"
                             className="text-[10px] fill-white font-black"
                         >
                             {attr.val}
@@ -126,32 +126,32 @@ function RadarChart({ stats, size = 32, showLabels = false }: { stats: { fitness
 function RadarModal({ player, onClose }: { player: Player, onClose: () => void }) {
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}>
-             <div className="glass p-8 rounded-3xl border border-white/10 flex flex-col items-center gap-6 shadow-2xl scale-110" onClick={e => e.stopPropagation()}>
+            <div className="glass p-8 rounded-3xl border border-white/10 flex flex-col items-center gap-6 shadow-2xl scale-110" onClick={e => e.stopPropagation()}>
                 <div className="text-center">
                     <h3 className="text-xl font-bold text-emerald-400">{player.alias || player.player}</h3>
                     <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] mt-1">Perfil Técnico Detallado</p>
                 </div>
-                
+
                 <div className="p-10 bg-black/20 rounded-full border border-white/5 relative">
-                    <RadarChart 
-                        size={200} 
-                        showLabels={true} 
+                    <RadarChart
+                        size={200}
+                        showLabels={true}
                         stats={{
                             fitness: player.fitness,
                             defensive: player.defensive,
                             strengths: player.strengths,
                             intensity: player.intensity || 0
-                        }} 
+                        }}
                     />
                 </div>
-                
-                <button 
+
+                <button
                     onClick={onClose}
                     className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-8 py-2 rounded-xl transition-all border border-emerald-500/20 font-bold text-sm"
                 >
                     Cerrar
                 </button>
-             </div>
+            </div>
         </div>
     );
 }
@@ -359,7 +359,7 @@ export default function PlayersPage() {
                                     Est. {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
-                            <th className="px-6 py-4 font-semibold text-right">Acción</th>
+                            <th className="px-6 py-4 font-semibold text-right"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -380,7 +380,13 @@ export default function PlayersPage() {
                             </tr>
                         ) : filteredPlayers.map((player) => (
                             <tr key={player.id} className="hover:bg-white/5 transition-colors group">
-                                <td className="px-6 py-4 font-medium text-emerald-400">{player.alias || player.player}</td>
+                                <td
+                                    className="px-6 py-4 font-medium text-emerald-400 cursor-pointer hover:underline decoration-emerald-500/30"
+                                    onClick={() => setEditingPlayer(player)}
+                                    title="Haga clic para editar"
+                                >
+                                    {player.alias || player.player}
+                                </td>
                                 <td className="px-6 py-4 text-center text-gray-400">{calculateAgeNum(player.birth) || '-'}</td>
                                 <td className="px-6 py-4 text-gray-400 text-sm">{player.pos || '-'}</td>
                                 <td className="px-6 py-4 text-center text-blue-400">{Math.round(player.fitness)}</td>
@@ -393,7 +399,7 @@ export default function PlayersPage() {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
-                                    <div 
+                                    <div
                                         className="flex justify-center cursor-pointer hover:scale-125 transition-transform"
                                         onClick={() => setSelectedRadarPlayer(player)}
                                         title="Ver perfil detallado"
@@ -411,14 +417,7 @@ export default function PlayersPage() {
                                         {player.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button
-                                        onClick={() => setEditingPlayer(player)}
-                                        className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                </td>
+                                {/* Cell for spacing if needed, or just remove if entire column header is gone */}
                             </tr>
                         ))}
                     </tbody>
@@ -434,7 +433,7 @@ export default function PlayersPage() {
             )}
 
             {selectedRadarPlayer && (
-                <RadarModal 
+                <RadarModal
                     player={selectedRadarPlayer}
                     onClose={() => setSelectedRadarPlayer(null)}
                 />
@@ -456,10 +455,19 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
     const [nombre, setNombre] = useState('');
     const [mobil, setCelular] = useState('');
     const [fechaNacimiento, setFechaNacimiento] = useState('');
+    const [mail, setMail] = useState('');
+    const [u_id, setDni] = useState('');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isDniValid = u_id.length >= 7 && !isNaN(Number(u_id));
+    const isEmailValid = emailRegex.test(mail);
+    const isNameValid = nombre.trim().length >= 3;
+
+    const isFormValid = isNameValid && isEmailValid && isDniValid;
 
     const handleSubmit = () => {
-        if (!nombre) return;
-        onSave({ player: nombre, mobil, birth: fechaNacimiento });
+        if (!isFormValid) return;
+        onSave({ player: nombre, mobil, birth: fechaNacimiento, mail, u_id });
     };
 
     return (
@@ -473,12 +481,15 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
                 <div className="p-6 space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Nombre Completo</label>
+                            <label className="block text-xs text-gray-400 mb-1 ml-1 flex justify-between">
+                                Nombre Completo <span className="text-red-500">*</span>
+                                {nombre && !isNameValid && <span className="text-[10px] text-red-400">Mín. 3 caracteres</span>}
+                            </label>
                             <input
                                 type="text"
                                 value={nombre}
                                 onChange={e => setNombre(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                                className={`w-full bg-white/5 border rounded-xl p-3 outline-none focus:ring-2 transition-all text-white ${nombre && !isNameValid ? 'border-red-500/50 focus:ring-red-500' : 'border-white/10 focus:ring-emerald-500'}`}
                                 placeholder="Ej: Juan Pérez"
                                 autoFocus
                             />
@@ -503,6 +514,34 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
                                 style={{ colorScheme: 'dark' }}
                             />
                         </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1 flex justify-between">
+                                Email <span className="text-red-500">*</span>
+                                {mail && !isEmailValid && <span className="text-[10px] text-red-400">Formato inválido</span>}
+                            </label>
+                            <input
+                                type="email"
+                                value={mail}
+                                onChange={e => setMail(e.target.value)}
+                                className={`w-full bg-white/5 border rounded-xl p-3 outline-none focus:ring-2 transition-all text-white ${mail && !isEmailValid ? 'border-red-500/50 focus:ring-red-500' : 'border-white/10 focus:ring-emerald-500'}`}
+                                placeholder="ejemplo@mail.com"
+                                required
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="block text-xs text-gray-400 mb-1 ml-1 flex justify-between">
+                                DNI <span className="text-red-500">*</span>
+                                {u_id && !isDniValid && <span className="text-[10px] text-red-400">Mín. 7 números</span>}
+                            </label>
+                            <input
+                                type="text"
+                                value={u_id}
+                                onChange={e => setDni(e.target.value)}
+                                className={`w-full bg-white/5 border rounded-xl p-3 outline-none focus:ring-2 transition-all text-white ${u_id && !isDniValid ? 'border-red-500/50 focus:ring-red-500' : 'border-white/10 focus:ring-emerald-500'}`}
+                                placeholder="12345678"
+                                required
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -515,7 +554,7 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={saving || !nombre}
+                        disabled={saving || !isFormValid}
                         className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
                     >
                         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
@@ -548,7 +587,7 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
 
     const handleChange = (field: keyof Player, value: any) => {
         let finalValue = value;
-        
+
         // Clamp numerical technical stats to 0-5
         if (['fitness', 'defensive', 'strengths', 'intensity'].includes(field as string)) {
             finalValue = Math.max(0, Math.min(5, Number(value)));
@@ -642,13 +681,9 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                         </div>
                         <div className="col-span-1">
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Celular</label>
-                            <input
-                                type="text"
-                                value={formData.mobil || ''}
-                                onChange={e => handleChange('mobil', e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
-                                placeholder="+34..."
-                            />
+                            <div className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-gray-500 italic pointer-events-none select-none">
+                                [ Data Protection ]
+                            </div>
                         </div>
                         <div className="col-span-1">
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
@@ -671,14 +706,10 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             />
                         </div>
                         <div className="col-span-1">
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">Documento (u_id)</label>
-                            <input
-                                type="text"
-                                value={formData.u_id || ''}
-                                onChange={e => handleChange('u_id', e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
-                                placeholder="12345678"
-                            />
+                            <label className="block text-xs text-gray-400 mb-1 ml-1">Documento (DNI)</label>
+                            <div className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-gray-500 italic pointer-events-none select-none">
+                                [ Data Protection ]
+                            </div>
                         </div>
                     </div>
 
@@ -787,7 +818,7 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                             <span className="text-xs text-gray-500 italic text-left">Calculado según atributos y edad</span>
                         </div>
                         <div className="flex items-center gap-4">
-                            <button 
+                            <button
                                 onClick={handleIndividualRecalculate}
                                 className="p-2 hover:bg-emerald-500/10 rounded-full transition-colors text-emerald-400 group"
                                 title="Recalcular según configuración actual"
