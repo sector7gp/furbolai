@@ -1,6 +1,6 @@
 {
   "name": "furbolai",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "node scripts/get-version.js && next dev -p 3001",
@@ -10,9 +10,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "clsx": "latest",
     "framer-motion": "latest",
     "html2canvas": "^1.4.1",
+    "jose": "^6.2.1",
     "lucide-react": "latest",
     "mysql2": "latest",
     "next": "latest",
@@ -22,6 +24,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",

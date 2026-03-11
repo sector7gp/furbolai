@@ -67,6 +67,17 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ## 📝 Changelog (Historial de Cambios)
 
+### [1.1.0] - 2026-03-11
+#### Añadido
+- **Sistema de Autenticación y Perfiles**: Implementación de login seguro con JWT y Bcrypt.
+- **Control de Acceso (RBAC)**: Roles diferenciados para Jugador, Entrenador y Admin con permisos específicos.
+- **Cambio Obligatorio de Clave**: Flujo de seguridad para el primer ingreso con validación de complejidad.
+- **Auto-registro**: Generación automática de perfiles de usuario basados en DNI existente.
+- **Middleware de Seguridad**: Protección de rutas a nivel de servidor y manejo de redirecciones de sesión.
+
+#### Cambiado
+- **Dashboard Protegido**: Restricción de visibilidad y acceso a configuraciones según el rol del usuario conectado.
+
 ### [1.0.4] - 2026-03-11
 #### Añadido
 - **Footer Premium**: Nuevo diseño responsivo con versión Git dinámica, links a repositorio y créditos.

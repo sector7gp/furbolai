@@ -11,6 +11,8 @@ export const metadata: Metadata = {
     description: "Generate balanced football teams using AI and stats.",
 };
 
+import { UserProvider } from "@/components/UserContext";
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -19,9 +21,11 @@ export default function RootLayout({
     return (
         <html lang="es">
             <body className={`${inter.className} bg-black text-white min-h-screen flex flex-col`}>
-                <div className="flex-grow">
-                    {children}
-                </div>
+                <UserProvider>
+                    <div className="flex-grow">
+                        {children}
+                    </div>
+                </UserProvider>
                 <Footer />
             </body>
         </html>

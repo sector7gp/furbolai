@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft, RefreshCcw } from 'lucide-react';
+import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft, RefreshCcw, LogOut, Shield, User } from 'lucide-react';
+import { useUser } from '@/components/UserContext';
 
 interface Player {
     id: number;
@@ -156,6 +157,7 @@ function RadarModal({ player, onClose }: { player: Player, onClose: () => void }
     );
 }
 export default function PlayersPage() {
+    const { user, logout } = useUser();
     const [selectedRadarPlayer, setSelectedRadarPlayer] = useState<Player | null>(null);
     const [players, setPlayers] = useState<Player[]>([]);
     const [search, setSearch] = useState('');
@@ -287,13 +289,32 @@ export default function PlayersPage() {
                     </Link>
                     <h1 className="text-3xl font-bold gradient-text">Gestión de Jugadores</h1>
                 </div>
-                <button
-                    onClick={() => setIsCreating(true)}
-                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-all shadow-lg shadow-emerald-500/20"
-                >
-                    <UserPlus className="w-5 h-5" />
-                    Nuevo Jugador
-                </button>
+                <div className="flex items-center gap-2 sm:gap-4">
+                    {user && (
+                        <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hidden md:flex">
+                            {user.role === 'Admin' ? <Shield className="w-4 h-4 text-purple-400" /> : <User className="w-4 h-4 text-emerald-400" />}
+                            <span className="text-xs font-bold text-gray-300">{user.username} <span className="text-gray-500 font-normal">({user.role})</span></span>
+                        </div>
+                    )}
+                    
+                    <button
+                        onClick={() => logout()}
+                        className="p-2 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-xl transition-all border border-transparent hover:border-red-500/20"
+                        title="Cerrar Sesión"
+                    >
+                        <LogOut className="w-5 h-5" />
+                    </button>
+
+                    {(user?.role === 'Admin' || user?.role === 'Entrenador') && (
+                        <button
+                            onClick={() => setIsCreating(true)}
+                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-all shadow-lg shadow-emerald-500/20"
+                        >
+                            <UserPlus className="w-5 h-5" />
+                            <span className="hidden sm:inline">Nuevo Jugador</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="glass p-6 rounded-2xl mb-8">
@@ -381,9 +402,9 @@ export default function PlayersPage() {
                         ) : filteredPlayers.map((player) => (
                             <tr key={player.id} className="hover:bg-white/5 transition-colors group">
                                 <td
-                                    className="px-6 py-4 font-medium text-emerald-400 cursor-pointer hover:underline decoration-emerald-500/30"
-                                    onClick={() => setEditingPlayer(player)}
-                                    title="Haga clic para editar"
+                                    className={`px-6 py-4 font-medium transition-colors ${user?.role !== 'Jugador' ? 'text-emerald-400 cursor-pointer hover:underline decoration-emerald-500/30' : 'text-gray-300'}`}
+                                    onClick={() => user?.role !== 'Jugador' && setEditingPlayer(player)}
+                                    title={user?.role !== 'Jugador' ? 'Haga clic para editar' : ''}
                                 >
                                     {player.alias || player.player}
                                 </td>
@@ -567,6 +588,7 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
 }
 
 function EditModal({ player, onClose, onSave, saving }: { player: Player, onClose: () => void, onSave: (p: Player) => void, saving: boolean }) {
+    const { user } = useUser();
     const [formData, setFormData] = useState<Player>({ ...player });
 
     useEffect(() => {
@@ -681,9 +703,18 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                         </div>
                         <div className="col-span-1">
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Celular</label>
-                            <div className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-gray-500 italic pointer-events-none select-none">
-                                [ Data Protection ]
-                            </div>
+                            {user?.role === 'Admin' ? (
+                                <input
+                                    type="text"
+                                    value={formData.mobil}
+                                    onChange={e => handleChange('mobil', e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white font-mono"
+                                />
+                            ) : (
+                                <div className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-gray-500 italic pointer-events-none select-none">
+                                    [ Data Protection ]
+                                </div>
+                            )}
                         </div>
                         <div className="col-span-1">
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Fecha de Nacimiento</label>
@@ -707,9 +738,18 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
                         </div>
                         <div className="col-span-1">
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Documento (DNI)</label>
-                            <div className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-gray-500 italic pointer-events-none select-none">
-                                [ Data Protection ]
-                            </div>
+                            {user?.role === 'Admin' ? (
+                                <input
+                                    type="text"
+                                    value={formData.u_id || ''}
+                                    onChange={e => handleChange('u_id', e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white font-mono"
+                                />
+                            ) : (
+                                <div className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-gray-500 italic pointer-events-none select-none">
+                                    [ Data Protection ]
+                                </div>
+                            )}
                         </div>
                     </div>
 

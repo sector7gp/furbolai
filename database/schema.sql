@@ -48,6 +48,18 @@ CREATE TABLE IF NOT EXISTS sorteos (
     fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE, -- DNI del jugador
+    password VARCHAR(255) NOT NULL,
+    role ENUM('Jugador', 'Entrenador', 'Admin') NOT NULL DEFAULT 'Jugador',
+    must_change_password BOOLEAN DEFAULT TRUE,
+    player_id INT NULL, -- Vinculación opcional con la tabla jugadores
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_player_user FOREIGN KEY (player_id) REFERENCES jugadores(id) ON DELETE SET NULL
+);
+
 /*
 -- GUIA DE IMPORTACION DE CSV --
 

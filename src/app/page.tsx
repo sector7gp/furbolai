@@ -1,10 +1,31 @@
+'use client';
+
 import Link from 'next/link';
-import { Users, ClipboardList, Settings } from 'lucide-react';
+import { Users, ClipboardList, Settings, LogOut, User, Shield } from 'lucide-react';
+import { useUser } from '@/components/UserContext';
 
 export default function Home() {
+    const { user, logout } = useUser();
+
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <header className="text-center mb-16">
+            <header className="flex flex-col items-center mb-16 relative">
+                {user && (
+                    <div className="absolute top-0 right-0 flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hidden sm:flex">
+                            {user.role === 'Admin' ? <Shield className="w-4 h-4 text-purple-400" /> : <User className="w-4 h-4 text-emerald-400" />}
+                            <span className="text-xs font-bold text-gray-300">{user.username}</span>
+                        </div>
+                        <button
+                            onClick={() => logout()}
+                            className="p-2 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-xl transition-all border border-transparent hover:border-red-500/20"
+                            title="Cerrar Sesión"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
+                
                 <h1 className="text-6xl font-extrabold mb-4">
                     <span className="gradient-text">FurbolAI</span>
                 </h1>
@@ -28,13 +49,15 @@ export default function Home() {
                         description="Gestioná la base de datos maestra con niveles y estadísticas."
                     />
                 </Link>
-                <Link href="/settings" className="flex">
-                    <Card
-                        icon={<Settings className="w-8 h-8 text-purple-500" />}
-                        title="Configuración"
-                        description="Ajustá los algoritmos de equilibrio y preferencias."
-                    />
-                </Link>
+                {user?.role !== 'Jugador' && (
+                    <Link href="/settings" className="flex">
+                        <Card
+                            icon={<Settings className="w-8 h-8 text-purple-500" />}
+                            title="Configuración"
+                            description="Ajustá los algoritmos de equilibrio y preferencias."
+                        />
+                    </Link>
+                )}
             </div>
 
             <section className="glass rounded-3xl p-12 text-center border-white/5 bg-white/[0.02] shadow-2xl">
