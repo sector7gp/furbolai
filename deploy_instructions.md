@@ -58,7 +58,13 @@ Una vez que la base de datos esté lista, debes actualizar la aplicación.
     npm run build
     ```
 ## 4. Reinicio o Alta del Servicio (PM2)
+Si aún no tienes **PM2** instalado globalmente, ejecútalo primero:
+```bash
+npm install pm2 -g
+```
+
 Es necesario reiniciar el proceso para que tome los cambios del `npm run build`.
+
 
 - **Si el servicio ya existe:**
     ```bash
