@@ -30,10 +30,24 @@ export default function WeeklyPage() {
     const processNames = (text: string) => {
         const lines = text.split('\n')
             .map(line => {
+                // Remove numbers at start like "1. ", "1) ", etc.
                 return line.trim().replace(/^[\d\.\)\-\s]+/, '').trim();
             })
-            .filter(line => line.length > 0 && !line.startsWith('#'));
-        setNames(lines);
+            // Filter out empty lines, comments, or lines that are just symbols
+            .filter(line => line.length > 1 && !line.startsWith('#') && /[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(line));
+        
+        // Remove duplicates case-insensitive
+        const uniqueLines: string[] = [];
+        const seen = new Set();
+        lines.forEach(line => {
+            const lower = line.toLowerCase();
+            if (!seen.has(lower)) {
+                seen.add(lower);
+                uniqueLines.push(line);
+            }
+        });
+        
+        setNames(uniqueLines);
     };
 
     const clearAll = () => {
@@ -58,12 +72,12 @@ export default function WeeklyPage() {
             const defaultPlayers = (missing || []).map((name: string, i: number) => ({
                 id: -1 - i,
                 jugador: name,
-                ng: 5,
-                ef: 5,
-                co: 5,
-                cd: 5,
-                intensidad: 5,
-                posiciones: ''
+                ng: 5.0,
+                fitness: 5,
+                defensive: 5,
+                strengths: 5,
+                intensity: 5,
+                status: 'A'
             }));
 
             const allPlayers = [...players, ...defaultPlayers];
@@ -157,7 +171,7 @@ export default function WeeklyPage() {
                     </div>
                 </header>
 
-                <div className={`grid grid-cols-1 md:grid-cols-${teamCount === 2 ? '2' : '3'} gap-6 mb-8`}>
+                <div className={`grid grid-cols-1 ${teamCount >= 2 ? 'md:grid-cols-2' : ''} ${teamCount === 3 ? 'lg:grid-cols-3' : ''} gap-6 mb-8`}>
                     {teams.map((team, idx) => {
                         const stats = calculateTeamStats(team);
                         const isWhite = idx === 0;
@@ -168,13 +182,26 @@ export default function WeeklyPage() {
                                         {idx + 1}
                                     </span>
                                     {teamCount === 2 ? (isWhite ? "Blanco" : "Negro") : `Equipo ${idx + 1}`}
+                                    <span className="ml-auto bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-xl text-sm font-bold border border-emerald-500/20">
+                                        {stats.avgNG.toFixed(1)} NG Prom.
+                                    </span>
                                 </h3>
 
-                                <div className="space-y-2 mb-6">
+                                <div className="space-y-1 mb-6">
                                     {team.map((p, i) => (
-                                        <div key={p.id} className="flex justify-between items-center py-2 px-3 hover:bg-white/5 rounded-lg transition-colors">
-                                            <span className="font-medium">{i + 1}. {p.alias || p.jugador}</span>
-                                            <span className="text-xs text-gray-500 font-bold">{Math.round(p.ng)} NG</span>
+                                        <div key={p.id} className="flex justify-between items-center py-1.5 px-3 hover:bg-white/5 rounded-lg transition-colors border-b border-white/5 last:border-0">
+                                            <span className="font-semibold text-sm truncate max-w-[120px]">
+                                                {i + 1}. {p.alias || p.jugador}
+                                            </span>
+                                            <div className="flex items-center gap-2 font-mono text-[11px]">
+                                                <span className="text-blue-400 w-4 text-center" title="EF">{Math.round(p.fitness)}</span>
+                                                <span className="text-gray-400 w-4 text-center" title="CD">{Math.round(p.defensive)}</span>
+                                                <span className="text-orange-400 w-4 text-center" title="F">{Math.round(p.strengths)}</span>
+                                                <span className="text-purple-400 w-4 text-center" title="INT">{Math.round(p.intensity || 0)}</span>
+                                                <span className="text-emerald-400 font-bold ml-1 bg-emerald-400/10 px-1.5 py-0.5 rounded min-w-[32px] text-center">
+                                                    {p.ng ? Number(p.ng).toFixed(1) : '5.0'}
+                                                </span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

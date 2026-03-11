@@ -9,17 +9,25 @@ export async function POST(request: Request) {
         }
 
         // Search for players whose alias or jugador matches any of the names
-        // Using a simple query for now. This could be optimized.
+        // Normalize names for comparison
+        const cleanNames = names.map(n => n.trim().toLowerCase());
+        
         const [rows]: any = await pool.query(
-            `SELECT id, player, mobil, alias, birth, pos, fitness, defensive, strengths, intensity, status
-             FROM jugadores WHERE (player IN (?) OR alias IN (?)) AND status = 'A'`,
-            [names, names]
+            `SELECT id, player AS jugador, alias, ng, fitness, defensive, strengths, intensity, status
+             FROM jugadores 
+             WHERE (LOWER(player) IN (?) OR LOWER(alias) IN (?)) 
+             AND status = 'A'`,
+            [cleanNames, cleanNames]
         );
 
         // Map found players to original requested names to handle missing ones
-        const foundNames = new Set(rows.map((p: any) => p.player.toLowerCase()).concat(rows.map((p: any) => p.alias?.toLowerCase())));
+        const foundNames = new Set();
+        rows.forEach((p: any) => {
+            foundNames.add(p.jugador.toLowerCase());
+            if (p.alias) foundNames.add(p.alias.toLowerCase());
+        });
 
-        const missing = names.filter(n => !foundNames.has(n.toLowerCase()));
+        const missing = names.filter(n => !foundNames.has(n.trim().toLowerCase()));
 
         return NextResponse.json({
             players: rows,

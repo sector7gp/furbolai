@@ -1,12 +1,13 @@
 interface Player {
     id: number;
     jugador: string;
+    alias?: string;
     ng: number;
-    ef: number;
-    co: number;
-    cd: number;
-    intensidad: number;
-    posiciones: string;
+    fitness: number;
+    defensive: number;
+    strengths: number;
+    intensity: number;
+    status?: string;
 }
 
 export function generateTeams(players: Player[], teamCount: number = 2) {
@@ -37,9 +38,9 @@ export function generateTeams(players: Player[], teamCount: number = 2) {
 export function calculateTeamStats(team: Player[]) {
     const count = team.length || 1;
     return {
-        avgNG: team.reduce((sum, p) => sum + Number(p.ng), 0) / count,
-        avgEF: team.reduce((sum, p) => sum + Number(p.ef), 0) / count,
-        avgCO: team.reduce((sum, p) => sum + Number(p.co), 0) / count,
-        avgCD: team.reduce((sum, p) => sum + Number(p.cd), 0) / count,
+        avgNG: Number(team.reduce((sum, p) => sum + Number(p.ng), 0) / count),
+        avgFitness: Number(team.reduce((sum, p) => sum + Number(p.fitness), 0) / count),
+        avgDefensive: Number(team.reduce((sum, p) => sum + Number(p.defensive), 0) / count),
+        avgStrengths: Number(team.reduce((sum, p) => sum + Number(p.strengths), 0) / count),
     };
 }
