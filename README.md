@@ -25,11 +25,46 @@ El Nivel General (NG) es un valor calculado que determina la habilidad de cada j
 *(Todos los parámetros son configurables desde la sección de ajustes).*
 
 ## 🛠️ Tecnologías
-...
+
+- **Framework**: Next.js 15 (App Router)
+- **Estilos**: Tailwind CSS 4
+- **Iconos**: Lucide React
+- **Base de Datos**: MariaDB
+- **Gestión**: PM2
+
 ## 📋 Requisitos Previos
-...
+
+- **Node.js**: Versión 18 o superior.
+- **Base de Datos**: MariaDB configurada con el esquema definido en `database/schema.sql`.
+- **npm**: Gestor de paquetes.
+
 ## ⚙️ Instalación y Despliegue (Servidor)
-...
+
+Para correr la aplicación de forma persistente en un servidor propio, se recomienda el uso de **PM2**.
+
+1.  **Instalar PM2 de forma global:**
+    ```bash
+    npm install -g pm2
+    ```
+
+2.  **Instalar dependencias y compilar:**
+    ```bash
+    npm install
+    npm run build
+    ```
+
+3.  **Iniciar la aplicación con PM2:**
+    ```bash
+    pm2 start npm --name "furbolai" -- start -- -p 3001
+    ```
+
+4.  **Configurar para que inicie automáticamente tras un reinicio del servidor:**
+    ```bash
+    pm2 save
+    pm2 startup
+    ```
+    *(Ejecuta el comando que devuelva `pm2 startup` para finalizar la configuración del sistema).*
+
 ## 📝 Changelog (Historial de Cambios)
 
 ### [1.0.3] - 2026-03-10

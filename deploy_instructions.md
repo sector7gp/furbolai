@@ -57,13 +57,31 @@ Una vez que la base de datos esté lista, debes actualizar la aplicación.
     ```bash
     npm run build
     ```
-5.  Reinicia el servicio de la aplicación (por ejemplo, si usas PM2 o algún gestor de servicios):
+## 4. Reinicio o Alta del Servicio (PM2)
+Es necesario reiniciar el proceso para que tome los cambios del `npm run build`.
+
+- **Si el servicio ya existe:**
     ```bash
     pm2 restart furbolai
-    # O el comando que utilices para reiniciar tu app
     ```
 
-## 4. Verificación Post-Despliegue
+- **Si es la primera vez que lo das de alta:**
+    ```bash
+    pm2 start npm --name "furbolai" -- start -- -p 3001
+    ```
+
+- **Verificar que esté corriendo:**
+    ```bash
+    pm2 status
+    ```
+
+- **Guardar configuración para reinicios del sistema:**
+    ```bash
+    pm2 save
+    ```
+
+
+## 5. Verificación Post-Despliegue
 Accede a la URL pública de tu aplicación en producción.
 
 1.  Ve a la sección de **Jugadores**.
