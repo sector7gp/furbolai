@@ -1,3 +1,5 @@
+[![Invitame un café en cafecito.app](https://cdn.cafecito.app/imgs/buttons/button_4.svg)](https://cafecito.app/sector7gp)
+
 # FurbolAI ⚽🤖
 
 FurbolAI es una aplicación web premium diseñada para gestionar jugadores de fútbol y generar equipos equilibrados de forma automática.
