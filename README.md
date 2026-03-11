@@ -67,6 +67,17 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ## 📝 Changelog (Historial de Cambios)
 
+### [1.0.4] - 2026-03-11
+#### Añadido
+- **Footer Premium**: Nuevo diseño responsivo con versión Git dinámica, links a repositorio y créditos.
+- **Validación de Datos**: Implementación de Regex para emails y validación numérica para DNI en el alta de jugadores.
+- **Gráficos de Radar Interactivos**: Los mini-gráficos de la tabla ahora son clicables y abren un modal con detalles técnicos ampliados.
+
+#### Cambiado
+- **Privacidad de Datos**: Ofuscación de campos sensibles (Celular y DNI) en la interfaz de edición.
+- **Experiencia de Usuario (UX)**: Edición de jugadores simplificada mediante clic directo en el nombre/alias (se eliminó el icono del lápiz).
+- **Alineación de Interfaz**: Ajuste de alturas y espaciados en las tarjetas del Dashboard para una visualización consistente en mobile y desktop.
+
 ### [1.0.3] - 2026-03-10
 #### Añadido
 - **Campo NG (Nivel General)**: Nuevo sistema de puntuación para jugadores.
