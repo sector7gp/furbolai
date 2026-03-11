@@ -7,6 +7,7 @@ interface User {
     userId: number;
     username: string;
     role: 'Jugador' | 'Entrenador' | 'Admin';
+    displayName: string;
 }
 
 interface UserContextType {

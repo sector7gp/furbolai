@@ -14,7 +14,7 @@ export default function Home() {
                     <div className="absolute top-0 right-0 flex items-center gap-3">
                         <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hidden sm:flex">
                             {user.role === 'Admin' ? <Shield className="w-4 h-4 text-purple-400" /> : <User className="w-4 h-4 text-emerald-400" />}
-                            <span className="text-xs font-bold text-gray-300">{user.username}</span>
+                            <span className="text-xs font-bold text-gray-300">{user.displayName}</span>
                         </div>
                         <button
                             onClick={() => logout()}

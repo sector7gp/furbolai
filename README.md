@@ -67,6 +67,15 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ## 📝 Changelog (Historial de Cambios)
 
+### [1.1.1] - 2026-03-11
+#### Añadido
+- **Selección de Posiciones (UI)**: Nuevo diseño basado en **Chips/Pills** para una selección de posiciones más compacta y moderna.
+- **Consistencia en Altas**: Se integró el selector de posiciones al modal de "Nuevo Jugador".
+- **Identidad Personalizada**: El sistema ahora muestra el **Alias** o **Nombre** del jugador en la barra de navegación en lugar de su DNI.
+
+#### Cambiado
+- **Refactor de Infraestructura**: Migración de `middleware.ts` a `proxy.ts` siguiendo las últimas convenciones de Next.js 16 para mejorar la seguridad y claridad del tráfico.
+
 ### [1.1.0] - 2026-03-11
 #### Añadido
 - **Sistema de Autenticación y Perfiles**: Implementación de login seguro con JWT y Bcrypt.

@@ -51,18 +51,27 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // Obtener nombre/alias del jugador para el display
+        const [userData]: any = await pool.query(
+            'SELECT j.alias, j.player FROM usuarios u JOIN jugadores j ON u.player_id = j.id WHERE u.id = ?',
+            [user.id]
+        );
+        const displayName = userData[0]?.alias || userData[0]?.player || user.username;
+
         // Crear sesión
         const token = await createSession({
             userId: user.id,
             username: user.username,
             role: user.role,
-            mustChangePassword: user.must_change_password
+            mustChangePassword: user.must_change_password,
+            displayName
         });
 
         const response = NextResponse.json({ 
             success: true, 
             mustChangePassword: user.must_change_password,
-            role: user.role 
+            role: user.role,
+            displayName
         });
 
         response.cookies.set('session', token, {

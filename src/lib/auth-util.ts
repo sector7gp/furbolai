@@ -9,6 +9,7 @@ export interface SessionPayload {
     username: string;
     role: 'Jugador' | 'Entrenador' | 'Admin';
     mustChangePassword: boolean;
+    displayName: string;
 }
 
 export async function hashPassword(password: string): Promise<string> {

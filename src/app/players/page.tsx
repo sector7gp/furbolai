@@ -478,6 +478,18 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
     const [fechaNacimiento, setFechaNacimiento] = useState('');
     const [mail, setMail] = useState('');
     const [u_id, setDni] = useState('');
+    const [p_name, setPName] = useState('');
+
+    const handleTogglePosition = (sigla: string) => {
+        const currentPositions = p_name ? p_name.split(',').map(s => s.trim()).filter(Boolean) : [];
+        let newPositions;
+        if (currentPositions.includes(sigla)) {
+            newPositions = currentPositions.filter(s => s !== sigla);
+        } else {
+            newPositions = [...currentPositions, sigla];
+        }
+        setPName(newPositions.join(','));
+    };
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isDniValid = u_id.length >= 7 && !isNaN(Number(u_id));
@@ -488,7 +500,7 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
 
     const handleSubmit = () => {
         if (!isFormValid) return;
-        onSave({ player: nombre, mobil, birth: fechaNacimiento, mail, u_id });
+        onSave({ player: nombre, mobil, birth: fechaNacimiento, mail, u_id, p_name });
     };
 
     return (
@@ -562,6 +574,28 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
                                 placeholder="12345678"
                                 required
                             />
+                        </div>
+                        <div className="col-span-2">
+                            <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Posiciones</label>
+                            <div className="flex flex-wrap gap-2">
+                                {POSITIONS.map(pos => {
+                                    const isSelected = p_name.split(',').map(s => s.trim()).includes(pos.sigla);
+                                    return (
+                                        <button
+                                            key={pos.sigla}
+                                            type="button"
+                                            onClick={() => handleTogglePosition(pos.sigla)}
+                                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
+                                                isSelected 
+                                                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-500/10' 
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                                            }`}
+                                        >
+                                            {pos.sigla}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -785,19 +819,25 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
 
 
                     <div className="col-span-2">
-                        <label className="block text-xs text-gray-400 mb-2 ml-1">Posiciones</label>
-                        <div className="grid grid-cols-6 gap-2 p-2 bg-white/5 rounded-2xl border border-white/5">
-                            {POSITIONS.map(pos => (
-                                <label key={pos.sigla} className="flex flex-col items-center gap-1 cursor-pointer group p-2 hover:bg-white/5 rounded-xl transition-colors">
-                                    <input
-                                        type="checkbox"
-                                        checked={(formData.p_name || '').split(',').map(s => s.trim()).includes(pos.sigla)}
-                                        onChange={() => handleTogglePosition(pos.sigla)}
-                                        className="w-4 h-4 rounded border-white/10 bg-black/40 text-emerald-500 focus:ring-emerald-500"
-                                    />
-                                    <span className="text-[10px] font-bold group-hover:text-emerald-400 transition-colors">{pos.sigla}</span>
-                                </label>
-                            ))}
+                        <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Posiciones</label>
+                        <div className="flex flex-wrap gap-2">
+                            {POSITIONS.map(pos => {
+                                const isSelected = (formData.p_name || '').split(',').map(s => s.trim()).includes(pos.sigla);
+                                return (
+                                    <button
+                                        key={pos.sigla}
+                                        type="button"
+                                        onClick={() => handleTogglePosition(pos.sigla)}
+                                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                                            isSelected 
+                                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-500/10' 
+                                            : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                                        }`}
+                                    >
+                                        {pos.sigla}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
