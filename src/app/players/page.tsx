@@ -344,9 +344,9 @@ export default function PlayersPage() {
                                     Edad {sortConfig.key === 'age' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
-                            <th className="px-6 py-4 font-semibold cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('pos')}>
+                            <th className="px-4 py-4 font-semibold cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('pos')}>
                                 <div className="flex items-center gap-1">
-                                    Posiciones {sortConfig.key === 'pos' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                    POS {sortConfig.key === 'pos' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
                                 </div>
                             </th>
                             <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('fitness')}>
@@ -375,11 +375,7 @@ export default function PlayersPage() {
                                 </div>
                             </th>
                             <th className="px-6 py-4 font-semibold text-center">Perfil</th>
-                            <th className="px-6 py-4 font-semibold text-center cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => handleSort('status')}>
-                                <div className="flex items-center justify-center gap-1">
-                                    Est. {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
-                                </div>
-                            </th>
+
                             <th className="px-6 py-4 font-semibold text-right"></th>
                         </tr>
                     </thead>
@@ -402,14 +398,14 @@ export default function PlayersPage() {
                         ) : filteredPlayers.map((player) => (
                             <tr key={player.id} className="hover:bg-white/5 transition-colors group">
                                 <td
-                                    className={`px-6 py-4 font-medium transition-colors ${user?.role !== 'Jugador' ? 'text-emerald-400 cursor-pointer hover:underline decoration-emerald-500/30' : 'text-gray-300'}`}
+                                    className={`px-6 py-4 font-medium transition-colors ${user?.role !== 'Jugador' ? 'cursor-pointer hover:underline' : ''} ${player.status === 'A' ? 'text-emerald-400' : 'text-rose-400'}`}
                                     onClick={() => user?.role !== 'Jugador' && setEditingPlayer(player)}
                                     title={user?.role !== 'Jugador' ? 'Haga clic para editar' : ''}
                                 >
                                     {player.alias || player.player}
                                 </td>
                                 <td className="px-6 py-4 text-center text-gray-400">{calculateAgeNum(player.birth) || '-'}</td>
-                                <td className="px-6 py-4 text-gray-400 text-sm">{player.pos || '-'}</td>
+                                <td className="px-4 py-4 text-gray-400 text-sm">{player.pos || '-'}</td>
                                 <td className="px-6 py-4 text-center text-blue-400">{Math.round(player.fitness)}</td>
                                 <td className="px-6 py-4 text-center text-gray-400">{Math.round(player.defensive)}</td>
                                 <td className="px-6 py-4 text-center text-orange-400">{Math.round(player.strengths)}</td>
@@ -433,11 +429,7 @@ export default function PlayersPage() {
                                         }} />
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className={`inline-block w-8 py-1 rounded-md text-sm font-bold ${player.status === 'A' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                                        {player.status}
-                                    </span>
-                                </td>
+
                                 {/* Cell for spacing if needed, or just remove if entire column header is gone */}
                             </tr>
                         ))}
