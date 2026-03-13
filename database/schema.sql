@@ -1,5 +1,6 @@
 -- FurbolAI Database Schema
 -- Creation date: 2026-03-09
+-- Last updated:  2026-03-13 (v1.1.3)
 
 CREATE DATABASE IF NOT EXISTS furbolai;
 USE furbolai;
@@ -10,7 +11,9 @@ CREATE TABLE IF NOT EXISTS jugadores (
     mobil VARCHAR(50),
     alias VARCHAR(100),
     birth DATE,
-    pos TEXT, -- Comma separated values (e.g., GK,MC,ST)
+    pos TEXT,      -- Número de posición primaria (e.g. '1' = GK, '9' = DEL)
+    -- IMPORTANTE: p_name acepta múltiples posiciones separadas por coma en orden de preferencia
+    --             Ejemplo: 'GK,LI' significa que juega primero de GK, y de lateral izq. como alternativa
     fitness DECIMAL(4),
     defensive DECIMAL(4),
     strengths DECIMAL(4),
@@ -18,7 +21,7 @@ CREATE TABLE IF NOT EXISTS jugadores (
     fecha_alta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_baja TIMESTAMP NULL,
     fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    p_name VARCHAR(255),
+    p_name VARCHAR(255), -- Nombres de posición separados por coma, en orden de preferencia (e.g. 'GK,LI')
     mail VARCHAR(255),
     t_id INT(11),
     u_id VARCHAR(50),
@@ -29,6 +32,7 @@ CREATE TABLE IF NOT EXISTS jugadores (
 CREATE TABLE IF NOT EXISTS configuracion (
     id INT PRIMARY KEY DEFAULT 1,
     team_count INT NOT NULL DEFAULT 2,
+    t_id INT NULL,              -- (v1.1.3) ID del equipo/grupo para filtrar jugadores en el sorteo semanal
     w_fitness FLOAT DEFAULT 1.0,
     w_defensive FLOAT DEFAULT 1.0,
     w_strengths FLOAT DEFAULT 1.0,
@@ -38,6 +42,16 @@ CREATE TABLE IF NOT EXISTS configuracion (
     age_decay FLOAT DEFAULT 0.02,
     fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+/*
+-- MIGRACIÓN v1.1.3 --
+-- Ejecutar este script si ya tenés la DB con la versión anterior:
+
+ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS t_id INT NULL;
+
+-- El campo t_id filtra la búsqueda de jugadores al grupo/equipo configurado.
+-- Si es NULL, el sistema busca en todos los jugadores activos (status='A').
+*/
 
 CREATE TABLE IF NOT EXISTS sorteos (
     id INT AUTO_INCREMENT PRIMARY KEY,
