@@ -71,6 +71,11 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ## 📝 Changelog (Historial de Cambios)
 
+### [1.1.4] - 2026-03-14
+#### Añadido
+- **Matcher de Jugadores**: Nuevo sistema de detección de jugadores desconocidos al pegar la lista de WhatsApp. Permite vincular nombres no reconocidos con jugadores existentes en la base de datos o darlos de alta como nuevos, manteniendo la integridad de las estadísticas.
+- **Normalización de Nombres**: Mejoras en el algoritmo de comparación para ignorar tildes y caracteres especiales de forma más robusta.
+
 ### [1.1.3] - 2026-03-13
 #### Añadido
 - **Plan B de Arquero**: Si la lista semanal no contiene suficientes arqueros (menos que la cantidad de equipos), se activa automáticamente un **modal de selección manual**. El coordinador designa a cualquier jugador de la lista para el arco; el rol se aplica solo para ese sorteo, sin modificar la base de datos.

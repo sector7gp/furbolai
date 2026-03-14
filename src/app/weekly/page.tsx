@@ -2,9 +2,129 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Download, Save, ChevronLeft, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Download, Save, ChevronLeft, AlertTriangle, ShieldAlert, User, Search } from 'lucide-react';
 import { generateTeams, calculateTeamStats, isGK, posLabel, Player } from '@/lib/team-generator';
 import html2canvas from 'html2canvas';
+
+// ─── Player Matcher Modal ─────────────────────────────────────────────────────
+
+interface PlayerMatcherProps {
+    missingNames: string[];
+    dbPlayers: Player[];
+    onConfirm: (matchedPlayers: Player[], stillMissing: string[]) => void;
+    onCancel: () => void;
+}
+
+function PlayerMatcherModal({ missingNames, dbPlayers, onConfirm, onCancel }: PlayerMatcherProps) {
+    const [currentIdx, setCurrentIdx] = useState(0);
+    const [search, setSearch] = useState('');
+    const [matched, setMatched] = useState<Player[]>([]);
+    const [ignored, setIgnored] = useState<string[]>([]);
+
+    const currentName = missingNames[currentIdx];
+
+    // Simple fuzzy match for suggestions
+    const suggestions = dbPlayers
+        .filter(p => {
+            const n = (p.jugador + (p.alias || '')).toLowerCase();
+            const s = search.toLowerCase() || currentName.toLowerCase();
+            return n.includes(s);
+        })
+        .slice(0, 5);
+
+    const handleMatch = (player: Player) => {
+        const nextMatched = [...matched, player];
+        if (currentIdx < missingNames.length - 1) {
+            setMatched(nextMatched);
+            setCurrentIdx(currentIdx + 1);
+            setSearch('');
+        } else {
+            onConfirm(nextMatched, ignored);
+        }
+    };
+
+    const handleSkip = () => {
+        const nextIgnored = [...ignored, currentName];
+        if (currentIdx < missingNames.length - 1) {
+            setIgnored(nextIgnored);
+            setCurrentIdx(currentIdx + 1);
+            setSearch('');
+        } else {
+            onConfirm(matched, nextIgnored);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+            <div className="glass w-full max-w-lg rounded-3xl overflow-hidden border-emerald-500/30 shadow-2xl shadow-emerald-500/10">
+                <div className="bg-emerald-500/10 border-b border-emerald-500/20 p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <User className="w-7 h-7 text-emerald-400" />
+                        <div>
+                            <h2 className="text-lg font-bold text-emerald-300">¿Quién es "{currentName}"?</h2>
+                            <p className="text-sm text-emerald-400/70">
+                                Jugador {currentIdx + 1} de {missingNames.length} no encontrados
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="Buscar en la base de datos..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-white"
+                            autoFocus
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Sugerencias</p>
+                        <div className="grid grid-cols-1 gap-2">
+                            {suggestions.map(p => (
+                                <button
+                                    key={p.id}
+                                    onClick={() => handleMatch(p)}
+                                    className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-left group"
+                                >
+                                    <div>
+                                        <p className="font-bold text-white group-hover:text-emerald-300">{p.alias || p.jugador}</p>
+                                        <p className="text-xs text-gray-500 truncate">{p.jugador}</p>
+                                    </div>
+                                    <span className="bg-emerald-400/10 text-emerald-400 px-2 py-1 rounded text-xs font-bold">
+                                        NG {Number(p.ng).toFixed(1)}
+                                    </span>
+                                </button>
+                            ))}
+                            {suggestions.length === 0 && (
+                                <p className="text-sm text-gray-500 italic p-4 text-center">No se encontraron coincidencias...</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 flex gap-3">
+                        <button
+                            onClick={handleSkip}
+                            className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-all font-semibold"
+                        >
+                            Es jugador nuevo
+                        </button>
+                        <button
+                            onClick={onCancel}
+                            className="px-6 py-3 rounded-xl border border-white/10 text-gray-500 hover:text-red-400 transition-all"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 // ─── Goalkeeper Picker Modal ──────────────────────────────────────────────────
 
@@ -113,6 +233,12 @@ export default function WeeklyPage() {
     const [goalsEq2, setGoalsEq2] = useState<string>('');
     const [savingGoals, setSavingGoals] = useState(false);
     const [missingPlayers, setMissingPlayers] = useState<string[]>([]);
+    const [allDbPlayers, setAllDbPlayers] = useState<Player[]>([]);
+
+    // Matcher modal state
+    const [matcherModalOpen, setMatcherModalOpen] = useState(false);
+    const [namesToMatch, setNamesToMatch] = useState<string[]>([]);
+    const [tempFoundPlayers, setTempFoundPlayers] = useState<Player[]>([]);
 
     // GK modal state
     const [gkModalOpen, setGkModalOpen] = useState(false);
@@ -128,6 +254,14 @@ export default function WeeklyPage() {
             .then(data => {
                 setTeamCount(data.teamCount || 2);
                 setTId(data.t_id || null);
+            })
+            .catch(console.error);
+
+        // Fetch all players for matching
+        fetch('/api/players')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setAllDbPlayers(data);
             })
             .catch(console.error);
     }, []);
@@ -202,37 +336,56 @@ export default function WeeklyPage() {
             });
             const { players, missing } = await res.json();
 
-            if (missing?.length > 0) setMissingPlayers(missing);
-
-            // Default stats for players not found in DB
-            const defaultPlayers: Player[] = (missing || []).map((name: string, i: number) => ({
-                id: -1 - i,
-                jugador: name,
-                ng: 5.0,
-                fitness: 5,
-                defensive: 5,
-                strengths: 5,
-                intensity: 5,
-                status: 'A'
-            }));
-
-            const allPlayers: Player[] = [...players, ...defaultPlayers];
-
-            // Check GK count
-            const gkCount = allPlayers.filter(p => isGK(p)).length;
-            const needed = teamCount - gkCount;
-
-            if (needed > 0) {
-                // Show modal to pick GKs manually
-                setPendingPlayers(allPlayers);
-                setGkNeeded(needed);
-                setGkModalOpen(true);
-            } else {
-                await buildAndSaveTeams(allPlayers);
+            if (missing?.length > 0) {
+                // Show matcher modal first
+                setTempFoundPlayers(players);
+                setNamesToMatch(missing);
+                setMatcherModalOpen(true);
+                setLoading(false);
+                return;
             }
+
+            await proceedWithPlayers(players, []);
         } catch (err) {
             console.error('Error generating teams:', err);
-        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleMatcherConfirm = async (matched: Player[], stillMissing: string[]) => {
+        setMatcherModalOpen(false);
+        setLoading(true);
+        await proceedWithPlayers([...tempFoundPlayers, ...matched], stillMissing);
+    };
+
+    const proceedWithPlayers = async (players: Player[], missing: string[]) => {
+        if (missing?.length > 0) setMissingPlayers(missing);
+
+        // Default stats for players still missing after matching
+        const defaultPlayers: Player[] = (missing || []).map((name: string, i: number) => ({
+            id: -1 - i,
+            jugador: name,
+            ng: 5.0,
+            fitness: 5,
+            defensive: 5,
+            strengths: 5,
+            intensity: 5,
+            status: 'A'
+        }));
+
+        const allPlayers: Player[] = [...players, ...defaultPlayers];
+
+        // Check GK count
+        const gkCount = allPlayers.filter(p => isGK(p)).length;
+        const needed = teamCount - gkCount;
+
+        if (needed > 0) {
+            setPendingPlayers(allPlayers);
+            setGkNeeded(needed);
+            setGkModalOpen(true);
+            setLoading(false);
+        } else {
+            await buildAndSaveTeams(allPlayers);
             setLoading(false);
         }
     };
@@ -306,6 +459,14 @@ export default function WeeklyPage() {
     if (teams) {
         return (
             <main className="max-w-5xl mx-auto px-4 py-8">
+                {matcherModalOpen && (
+                    <PlayerMatcherModal
+                        missingNames={namesToMatch}
+                        dbPlayers={allDbPlayers}
+                        onConfirm={handleMatcherConfirm}
+                        onCancel={() => setMatcherModalOpen(false)}
+                    />
+                )}
                 {gkModalOpen && (
                     <GoalkeeperPickerModal
                         players={pendingPlayers}
@@ -371,10 +532,10 @@ export default function WeeklyPage() {
                                     {team.map((p, i) => {
                                         const label = posLabel(p);
                                         const labelColor =
-                                            label === 'GK'  ? 'text-amber-400' :
-                                            label === 'DEF' ? 'text-blue-400'  :
-                                            label === 'MID' ? 'text-purple-400':
-                                            label === 'FWD' ? 'text-red-400'   : 'text-gray-500';
+                                            label === 'GK' ? 'text-amber-400' :
+                                                label === 'DEF' ? 'text-blue-400' :
+                                                    label === 'MID' ? 'text-purple-400' :
+                                                        label === 'FWD' ? 'text-red-400' : 'text-gray-500';
                                         return (
                                             <div key={p.id} className="flex justify-between items-center py-1.5 px-3 hover:bg-white/5 rounded-lg transition-colors border-b border-white/5 last:border-0">
                                                 <span className="font-semibold text-sm truncate max-w-[130px]">
@@ -484,6 +645,14 @@ export default function WeeklyPage() {
     return (
         <main className="max-w-2xl mx-auto px-4 py-8 md:py-12">
             {/* GK modal can also appear on input view if triggered */}
+            {matcherModalOpen && (
+                <PlayerMatcherModal
+                    missingNames={namesToMatch}
+                    dbPlayers={allDbPlayers}
+                    onConfirm={handleMatcherConfirm}
+                    onCancel={() => setMatcherModalOpen(false)}
+                />
+            )}
             {gkModalOpen && (
                 <GoalkeeperPickerModal
                     players={pendingPlayers}
