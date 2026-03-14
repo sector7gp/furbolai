@@ -71,6 +71,11 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ## 📝 Changelog (Historial de Cambios)
 
+### [1.1.5] - 2026-03-14
+#### Añadido
+- **Creación Persistente de Jugadores**: Ahora es posible crear nuevos jugadores directamente desde el modal de emparejamiento. Los jugadores se guardan en la base de datos con su nivel (NG) calculado automáticamente y se integran de inmediato al sorteo actual.
+- **Sincronización de Datos API/UI**: Mejora en la comunicación entre el backend y frontend para asegurar que las estadísticas de nuevos jugadores se reflejen correctamente sin recargar la página.
+
 ### [1.1.4] - 2026-03-14
 #### Añadido
 - **Matcher de Jugadores**: Nuevo sistema de detección de jugadores desconocidos al pegar la lista de WhatsApp. Permite vincular nombres no reconocidos con jugadores existentes en la base de datos o darlos de alta como nuevos, manteniendo la integridad de las estadísticas.

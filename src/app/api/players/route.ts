@@ -80,14 +80,27 @@ export async function POST(request: Request) {
         }
 
         const ng = calculateNG({ fitness: fitness || 5, defensive: defensive || 5, strengths: strengths || 5, intensity: intensity || 5, birth: formattedDate || '' }, config);
-
         const [result] = await pool.query(
             `INSERT INTO jugadores (player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, ng, status) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness || 5, defensive || 5, strengths || 5, intensity || 5, ng, status || 'A']
         );
 
-        return NextResponse.json({ id: (result as any).insertId, ...body });
+        const newId = (result as any).insertId;
+        return NextResponse.json({ 
+            id: newId, 
+            jugador: player,
+            alias,
+            birth: formattedDate,
+            pos,
+            p_name,
+            fitness: fitness || 5,
+            defensive: defensive || 5,
+            strengths: strengths || 5,
+            intensity: intensity || 5,
+            ng,
+            status: status || 'A'
+        });
     } catch (error) {
         console.error('Database Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

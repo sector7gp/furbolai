@@ -11,17 +11,39 @@ import html2canvas from 'html2canvas';
 interface PlayerMatcherProps {
     missingNames: string[];
     dbPlayers: Player[];
+    tId: number | null;
     onConfirm: (matchedPlayers: Player[], stillMissing: string[]) => void;
     onCancel: () => void;
 }
 
-function PlayerMatcherModal({ missingNames, dbPlayers, onConfirm, onCancel }: PlayerMatcherProps) {
+function PlayerMatcherModal({ missingNames, dbPlayers, tId, onConfirm, onCancel }: PlayerMatcherProps) {
     const [currentIdx, setCurrentIdx] = useState(0);
     const [search, setSearch] = useState('');
     const [matched, setMatched] = useState<Player[]>([]);
     const [ignored, setIgnored] = useState<string[]>([]);
+    const [isCreating, setIsCreating] = useState(false);
+    const [saving, setSaving] = useState(false);
 
+    // Initial form state for creation
+    const [formData, setFormData] = useState({
+        player: '',
+        alias: '',
+        pos: '8', // MID by default
+        p_name: 'MID',
+        fitness: 5,
+        defensive: 5,
+        strengths: 5,
+        intensity: 5
+    });
+    
     const currentName = missingNames[currentIdx];
+
+    // Sync alias with current unrecognized name when entering create mode
+    useEffect(() => {
+        if (isCreating && !formData.alias) {
+            setFormData(prev => ({ ...prev, alias: currentName, player: currentName }));
+        }
+    }, [isCreating, currentName, formData.alias]);
 
     // Simple fuzzy match for suggestions
     const suggestions = dbPlayers
@@ -38,8 +60,33 @@ function PlayerMatcherModal({ missingNames, dbPlayers, onConfirm, onCancel }: Pl
             setMatched(nextMatched);
             setCurrentIdx(currentIdx + 1);
             setSearch('');
+            setIsCreating(false);
         } else {
             onConfirm(nextMatched, ignored);
+        }
+    };
+
+    const handleCreateAndSave = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch('/api/players', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...formData,
+                    t_id: tId,
+                    status: 'A'
+                })
+            });
+            const newPlayer = await res.json();
+            if (newPlayer.id) {
+                // Return as matched but with the proper DB ID and calculated NG
+                handleMatch(newPlayer as Player);
+            }
+        } catch (error) {
+            console.error('Error saving player:', error);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -49,6 +96,7 @@ function PlayerMatcherModal({ missingNames, dbPlayers, onConfirm, onCancel }: Pl
             setIgnored(nextIgnored);
             setCurrentIdx(currentIdx + 1);
             setSearch('');
+            setIsCreating(false);
         } else {
             onConfirm(matched, nextIgnored);
         }
@@ -70,56 +118,139 @@ function PlayerMatcherModal({ missingNames, dbPlayers, onConfirm, onCancel }: Pl
                 </div>
 
                 <div className="p-6 space-y-6">
-                    <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder="Buscar en la base de datos..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-white"
-                            autoFocus
-                        />
-                    </div>
+                    {!isCreating ? (
+                        <>
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar en la base de datos..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-white"
+                                    autoFocus
+                                />
+                            </div>
 
-                    <div className="space-y-2">
-                        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Sugerencias</p>
-                        <div className="grid grid-cols-1 gap-2">
-                            {suggestions.map(p => (
+                            <div className="space-y-2">
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Sugerencias</p>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {suggestions.map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => handleMatch(p)}
+                                            className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-left group"
+                                        >
+                                            <div>
+                                                <p className="font-bold text-white group-hover:text-emerald-300">{p.alias || p.jugador}</p>
+                                                <p className="text-xs text-gray-500 truncate">{p.jugador}</p>
+                                            </div>
+                                            <span className="bg-emerald-400/10 text-emerald-400 px-2 py-1 rounded text-xs font-bold">
+                                                NG {Number(p.ng).toFixed(1)}
+                                            </span>
+                                        </button>
+                                    ))}
+                                    {suggestions.length === 0 && (
+                                        <p className="text-sm text-gray-500 italic p-4 text-center">No se encontraron coincidencias...</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-white/5 flex gap-3">
                                 <button
-                                    key={p.id}
-                                    onClick={() => handleMatch(p)}
-                                    className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-left group"
+                                    onClick={() => setIsCreating(true)}
+                                    className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all font-bold shadow-lg shadow-emerald-500/10"
                                 >
-                                    <div>
-                                        <p className="font-bold text-white group-hover:text-emerald-300">{p.alias || p.jugador}</p>
-                                        <p className="text-xs text-gray-500 truncate">{p.jugador}</p>
-                                    </div>
-                                    <span className="bg-emerald-400/10 text-emerald-400 px-2 py-1 rounded text-xs font-bold">
-                                        NG {Number(p.ng).toFixed(1)}
-                                    </span>
+                                    Crear y Guardar
                                 </button>
-                            ))}
-                            {suggestions.length === 0 && (
-                                <p className="text-sm text-gray-500 italic p-4 text-center">No se encontraron coincidencias...</p>
-                            )}
-                        </div>
-                    </div>
+                                <button
+                                    onClick={handleSkip}
+                                    className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-all font-semibold"
+                                >
+                                    Solo para este sorteo
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] uppercase text-gray-500 font-bold ml-1">Alias/Nombre</label>
+                                    <input
+                                        type="text"
+                                        value={formData.alias}
+                                        onChange={e => setFormData({ ...formData, alias: e.target.value, player: e.target.value })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 focus:ring-1 focus:ring-emerald-500 outline-none text-white text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] uppercase text-gray-500 font-bold ml-1">Posiciones (e.g. GK, DEF)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.p_name}
+                                        onChange={e => {
+                                            const val = e.target.value.toUpperCase();
+                                            // Map first code to pos number for generator simplicity
+                                            let pNum = '8';
+                                            if (val.includes('GK')) pNum = '1';
+                                            else if (val.includes('DEF')) pNum = '4';
+                                            else if (val.includes('FWD')) pNum = '9';
+                                            setFormData({ ...formData, p_name: val, pos: pNum });
+                                        }}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 focus:ring-1 focus:ring-emerald-500 outline-none text-white text-sm"
+                                    />
+                                </div>
+                            </div>
 
-                    <div className="pt-4 border-t border-white/5 flex gap-3">
-                        <button
-                            onClick={handleSkip}
-                            className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-all font-semibold"
-                        >
-                            Es jugador nuevo
-                        </button>
-                        <button
-                            onClick={onCancel}
-                            className="px-6 py-3 rounded-xl border border-white/10 text-gray-500 hover:text-red-400 transition-all"
-                        >
-                            Cancelar
-                        </button>
-                    </div>
+                            <div className="grid grid-cols-4 gap-3">
+                                {[
+                                    { k: 'fitness', l: 'FIT', c: 'text-blue-400' },
+                                    { k: 'defensive', l: 'DEF', c: 'text-gray-400' },
+                                    { k: 'strengths', l: 'FOR', c: 'text-orange-400' },
+                                    { k: 'intensity', l: 'INT', c: 'text-purple-400' }
+                                ].map(s => (
+                                    <div key={s.k} className="space-y-1">
+                                        <label className={`text-[10px] uppercase font-bold text-center block ${s.c}`}>{s.l}</label>
+                                        <input
+                                            type="number"
+                                            min="1" max="10" step="0.5"
+                                            value={formData[s.k as keyof typeof formData]}
+                                            onChange={e => setFormData({ ...formData, [s.k]: Number(e.target.value) })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-2 py-2 text-center focus:ring-1 focus:ring-emerald-500 outline-none text-white text-sm font-mono"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-4 border-t border-white/5 flex gap-3">
+                                <button
+                                    onClick={handleCreateAndSave}
+                                    disabled={saving || !formData.alias}
+                                    className="flex-2 flex-grow py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                >
+                                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Guardar y Usar
+                                </button>
+                                <button
+                                    onClick={() => setIsCreating(false)}
+                                    className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-all font-semibold"
+                                >
+                                    Volver
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {!isCreating && (
+                        <div className="pt-2 flex justify-center">
+                            <button
+                                onClick={onCancel}
+                                className="text-xs text-gray-600 hover:text-red-400 transition-all underline underline-offset-4"
+                            >
+                                Cancelar sorteo
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -463,6 +594,7 @@ export default function WeeklyPage() {
                     <PlayerMatcherModal
                         missingNames={namesToMatch}
                         dbPlayers={allDbPlayers}
+                        tId={tId}
                         onConfirm={handleMatcherConfirm}
                         onCancel={() => setMatcherModalOpen(false)}
                     />
@@ -649,6 +781,7 @@ export default function WeeklyPage() {
                 <PlayerMatcherModal
                     missingNames={namesToMatch}
                     dbPlayers={allDbPlayers}
+                    tId={tId}
                     onConfirm={handleMatcherConfirm}
                     onCancel={() => setMatcherModalOpen(false)}
                 />
