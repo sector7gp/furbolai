@@ -1,78 +1,85 @@
 [![Invitame un café en cafecito.app](https://cdn.cafecito.app/imgs/buttons/button_4.svg)](https://cafecito.app/sector7gp)
 
-# FurbolAI ⚽🤖
-
-FurbolAI es una aplicación web premium diseñada para gestionar jugadores de fútbol y generar equipos equilibrados de forma automática.
-
-## 🚀 Características
-
-- **Gestión Maestra**: Base de datos MariaDB para almacenar jugadores con estadísticas detalladas (NG, EF, CO, CD, Intensidad).
-- **Lista Semanal**: Pegado directo desde WhatsApp con limpieza automática de emojis, números y bullets.
-- **Equilibrio Inteligente**: Algoritmo Snake por líneas (GK → DEF → MID → FWD) con equipos de **tamaño estrictamente igual**.
-- **Posiciones Flexibles**: Un jugador puede tener múltiples posiciones en orden de preferencia (ej. `GK,LI`). Si el arco está cubierto, juega como lateral.
-- **Plan B de Arquero**: Modal automático de selección manual cuando faltan arqueros en la lista semanal.
-- **Diseño Premium**: Interfaz moderna con Dark Mode y Glassmorphism.
-- **Configuración Dinámica**: Parámetros de cálculo de nivel y reglas de negocio ajustables desde la UI.
-
-## 🧠 Sistema de Nivel General (NG)
-
-El Nivel General (NG) es un valor calculado que determina la habilidad de cada jugador para el balanceo de equipos.
-
-### Lógica de Cálculo
-1.  **Promedio Técnico**: Se calcula un promedio de *E. Físico*, *Defensa*, *Fortaleza* e *Intensidad*.
-2.  **Ponderación**: Cada atributo tiene un peso (weight) ajustable desde la configuración (por defecto 1.0).
-3.  **Factor de Edad**:
-    - **Plenitud**: Rango de edad (ej. 20-32 años) donde el rendimiento es 100%.
-    - **Crecimiento**: Jugadores menores al rango inician en 90% y escalan linearmente.
-    - **Decaimiento**: Jugadores mayores al rango reducen su NG gradualmente (ej. 2% anual) por desgaste físico.
-
-*(Todos los parámetros son configurables desde la sección de ajustes).*
-
-## 🛠️ Tecnologías
-
-- **Framework**: Next.js 15 (App Router)
-- **Estilos**: Tailwind CSS 4
-- **Iconos**: Lucide React
-- **Base de Datos**: MariaDB
-- **Gestión**: PM2
-
-## 📋 Requisitos Previos
-
-- **Node.js**: Versión 18 o superior.
-- **Base de Datos**: MariaDB configurada con el esquema definido en `database/schema.sql`.
-- **npm**: Gestor de paquetes.
-
-## ⚙️ Instalación y Despliegue (Servidor)
-
-Para correr la aplicación de forma persistente en un servidor propio, se recomienda el uso de **PM2**.
-
-1.  **Instalar PM2 de forma global:**
-    ```bash
-    npm install -g pm2
-    ```
-
-2.  **Instalar dependencias y compilar:**
-    ```bash
-    npm install
-    npm run build
-    ```
-
-3.  **Iniciar la aplicación con PM2:**
-    ```bash
-    pm2 start npm --name "furbolai" -- start -- -p 3001
-    ```
-
-4.  **Configurar para que inicie automáticamente tras un reinicio del servidor:**
-    ```bash
-    pm2 save
-    pm2 startup
-    ```
-    *(Ejecuta el comando que devuelva `pm2 startup` para finalizar la configuración del sistema).*
-
-## 📝 Changelog (Historial de Cambios)
-
-### [1.1.5] - 2026-03-14
-#### Añadido
+# Pan Ai Queso ⚽🥖🧀
++
++Pan Ai Queso (anteriormente FurbolAI) es una aplicación web premium diseñada para gestionar jugadores de fútbol y generar equipos equilibrados de forma automática.
++
++## 🚀 Características
++
++- **Gestión Maestra**: Base de datos MariaDB para almacenar jugadores con estadísticas detalladas (NG, EF, CO, CD, Intensidad).
++- **Lista Semanal**: Pegado directo desde WhatsApp con limpieza automática de emojis, números y bullets.
++- **Equilibrio Inteligente**: Algoritmo Snake por líneas (GK → DEF → MID → FWD) con equipos de **tamaño estrictamente igual**.
++- **Posiciones Flexibles**: Un jugador puede tener múltiples posiciones en orden de preferencia (ej. `GK,LI`). Si el arco está cubierto, juega como lateral.
++- **Plan B de Arquero**: Modal automático de selección manual cuando faltan arqueros en la lista semanal.
++- **Sorteos Pasados**: Historial detallado de equipos y resultados de fechas anteriores.
++- **Diseño Premium**: Interfaz moderna con Dark Mode y Glassmorphism.
++- **Configuración Dinámica**: Parámetros de cálculo de nivel y reglas de negocio ajustables desde la UI.
++
++## 🧠 Sistema de Nivel General (NG)
++
++El Nivel General (NG) es un valor calculado que determina la habilidad de cada jugador para el balanceo de equipos.
++
++### Lógica de Cálculo
++1.  **Promedio Técnico**: Se calcula un promedio de *E. Físico*, *Defensa*, *Fortaleza* e *Intensidad*.
++2.  **Ponderación**: Cada atributo tiene un peso (weight) ajustable desde la configuración (por defecto 1.0).
++3.  **Factor de Edad**:
++    - **Plenitud**: Rango de edad (ej. 20-32 años) donde el rendimiento es 100%.
++    - **Crecimiento**: Jugadores menores al rango inician en 90% y escalan linearmente.
++    - **Decaimiento**: Jugadores mayores al rango reducen su NG gradualmente (ej. 2% anual) por desgaste físico.
++
++*(Todos los parámetros son configurables desde la sección de ajustes).*
++
++## 🛠️ Tecnologías
++
++- **Framework**: Next.js 15 (App Router)
++- **Estilos**: Tailwind CSS 4
++- **Iconos**: Lucide React
++- **Base de Datos**: MariaDB
++- **Gestión**: PM2
++
++## 📋 Requisitos Previos
++
++- **Node.js**: Versión 18 o superior.
++- **Base de Datos**: MariaDB configurada con el esquema definido en `database/schema.sql`.
++- **npm**: Gestor de paquetes.
++
++## ⚙️ Instalación y Despliegue (Servidor)
++
++Para correr la aplicación de forma persistente en un servidor propio, se recomienda el uso de **PM2**.
++
++1.  **Instalar PM2 de forma global:**
++    ```bash
++    npm install -g pm2
++    ```
++
++2.  **Instalar dependencias y compilar:**
++    ```bash
++    npm install
++    npm run build
++    ```
++
++3.  **Iniciar la aplicación con PM2:**
++    ```bash
++    pm2 start npm --name "panaiqueso" -- start -- -p 3001
++    ```
++
++4.  **Configurar para que inicie automáticamente tras un reinicio del servidor:**
++    ```bash
++    pm2 save
++    pm2 startup
++    ```
++    *(Ejecuta el comando que devuelva `pm2 startup` para finalizar la configuración del sistema).*
++
++## 📝 Changelog (Historial de Cambios)
++
++### [1.2.0] - 2026-03-14
++#### Añadido
++- **Rebranding total**: La aplicación pasa a llamarse **Pan Ai Queso**.
++- **Dashboard 2.0**: Rediseño de la página principal a una grilla de 2x2.
++- **Historial de Sorteos**: Nueva sección para consultar sorteos anteriores, incluyendo la fecha, número de sorteo y composición de los equipos.
++
++### [1.1.5] - 2026-03-14
++#### Añadido
 - **Creación Persistente de Jugadores**: Ahora es posible crear nuevos jugadores directamente desde el modal de emparejamiento. Los jugadores se guardan en la base de datos con su nivel (NG) calculado automáticamente y se integran de inmediato al sorteo actual.
 - **Sincronización de Datos API/UI**: Mejora en la comunicación entre el backend y frontend para asegurar que las estadísticas de nuevos jugadores se reflejen correctamente sin recargar la página.
 

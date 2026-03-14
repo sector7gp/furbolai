@@ -1,14 +1,18 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Users, ClipboardList, Settings, LogOut, User, Shield } from 'lucide-react';
+import { Users, ClipboardList, Settings, LogOut, User, Shield, History as HistoryIcon } from 'lucide-react';
 import { useUser } from '@/components/UserContext';
+import HistoryModal from '@/components/HistoryModal';
 
 export default function Home() {
     const { user, logout } = useUser();
+    const [historyOpen, setHistoryOpen] = useState(false);
 
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            {historyOpen && <HistoryModal onClose={() => setHistoryOpen(false)} />}
             <header className="flex flex-col items-center mb-16 relative">
                 {user && (
                     <div className="absolute top-0 right-0 flex items-center gap-3">
@@ -27,14 +31,14 @@ export default function Home() {
                 )}
                 
                 <h1 className="text-6xl font-extrabold mb-4">
-                    <span className="gradient-text">FurbolAI</span>
+                    <span className="gradient-text">Pan Ai Queso</span>
                 </h1>
                 <p className="text-gray-400 text-xl max-w-2xl mx-auto">
                     Armá tus equipos de fútbol de forma inteligente, equilibrada y rápida.
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 items-stretch">
                 <Link href="/weekly" className="flex">
                     <Card
                         icon={<ClipboardList className="w-8 h-8 text-emerald-500" />}
@@ -49,6 +53,13 @@ export default function Home() {
                         description="Gestioná la base de datos maestra con niveles y estadísticas."
                     />
                 </Link>
+                <Link href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setHistoryOpen(true); }} className="flex">
+                    <Card
+                        icon={<HistoryIcon className="w-8 h-8 text-amber-500" />}
+                        title="Sorteos Pasados"
+                        description="Consultá el historial de equipos y resultados anteriores."
+                    />
+                </Link>
                 {user?.role !== 'Jugador' && (
                     <Link href="/settings" className="flex">
                         <Card
@@ -59,18 +70,6 @@ export default function Home() {
                     </Link>
                 )}
             </div>
-
-            <section className="glass rounded-3xl p-12 text-center border-white/5 bg-white/[0.02] shadow-2xl">
-                <h2 className="text-3xl font-bold mb-4">¿Listo para el partido?</h2>
-                <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                    Pegá los nombres de hoy en la sección semanal y nosotros nos encargamos del resto.
-                </p>
-                <Link href="/weekly">
-                    <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg shadow-emerald-500/20 cursor-pointer">
-                        Comenzar Selección
-                    </button>
-                </Link>
-            </section>
         </main>
     );
 }

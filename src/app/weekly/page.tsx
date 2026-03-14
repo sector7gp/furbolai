@@ -576,7 +576,7 @@ export default function WeeklyPage() {
             const link = document.createElement('a');
             link.href = image;
             const dateStr = new Date().toISOString().split('T')[0];
-            link.download = `furbolai_equipos_${dateStr}.jpg`;
+            link.download = `pan-ai-queso_equipos_${dateStr}.jpg`;
             link.click();
         } catch (err) {
             console.error('Export error:', err);
@@ -737,7 +737,7 @@ export default function WeeklyPage() {
                 <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
                     <div ref={exportRef} style={{ width: '800px', backgroundColor: '#0a0a0a', color: '#ffffff', padding: '48px', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'sans-serif', boxSizing: 'border-box' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '24px' }}>
-                            <h2 style={{ fontSize: '36px', fontWeight: 900, color: '#34d399', margin: 0 }}>FurbolAI</h2>
+                            <h2 style={{ fontSize: '36px', fontWeight: 900, color: '#34d399', margin: 0 }}>Pan Ai Queso</h2>
                             <p style={{ fontSize: '20px', color: '#9ca3af', fontWeight: 500, margin: 0 }}>Sorteo del {new Date().toLocaleDateString('es-ES')}</p>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }}>
