@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Download, Save, ChevronLeft, AlertTriangle, ShieldAlert, User, Search } from 'lucide-react';
+import { ClipboardList, X, CheckCircle2, Trash2, Loader2, Download, Save, ChevronLeft, AlertTriangle, ShieldAlert, User, Search, Shield } from 'lucide-react';
 import { generateTeams, calculateTeamStats, isGK, posLabel, Player } from '@/lib/team-generator';
 import html2canvas from 'html2canvas';
+import { useUser } from '@/components/UserContext';
+import ProfileModal from '@/components/ProfileModal';
 
 // ─── Player Matcher Modal ─────────────────────────────────────────────────────
 
@@ -352,6 +354,8 @@ function GoalkeeperPickerModal({ players, needed, onConfirm, onCancel }: GKModal
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function WeeklyPage() {
+    const { user } = useUser();
+    const [profileOpen, setProfileOpen] = useState(false);
     const [fileContent, setFileContent] = useState<string>('');
     const [names, setNames] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
@@ -447,7 +451,7 @@ export default function WeeklyPage() {
             const drawRes = await fetch('/api/draws', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ teams: result.teams })
+                body: JSON.stringify({ teams: result.teams, t_id: tId })
             });
             const drawData = await drawRes.json();
             if (drawData.id) setDrawId(drawData.id);
@@ -590,6 +594,7 @@ export default function WeeklyPage() {
     if (teams) {
         return (
             <main className="max-w-5xl mx-auto px-4 py-8">
+                {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
                 {matcherModalOpen && (
                     <PlayerMatcherModal
                         missingNames={namesToMatch}
@@ -618,7 +623,22 @@ export default function WeeklyPage() {
                             <p className="text-gray-400 text-sm">Sorteo guardado {drawId ? `(#${drawId})` : ''}</p>
                         </div>
                     </div>
-                    <div className="flex gap-3">
+                    
+                    <div className="flex flex-wrap items-center gap-3">
+                        {loading ? (
+                            <Loader2 className="w-5 h-5 animate-spin text-gray-600 mr-4" />
+                        ) : user && (
+                            <button 
+                                onClick={() => setProfileOpen(true)}
+                                className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hover:bg-white/10 hover:border-emerald-500/30 transition-all group mr-2"
+                            >
+                                {user.role === 'Admin' ? <Shield className="w-4 h-4 text-purple-400" /> : <User className="w-4 h-4 text-emerald-400" />}
+                                <span className="text-xs font-bold text-gray-300 group-hover:text-emerald-400">
+                                    {user.displayName} <span className="text-gray-500 font-normal group-hover:text-emerald-500/50 hidden xs:inline">({user.role})</span>
+                                </span>
+                            </button>
+                        )}
+
                         <button
                             onClick={() => buildAndSaveTeams(lastActivePlayers)}
                             disabled={loading}
@@ -776,6 +796,7 @@ export default function WeeklyPage() {
 
     return (
         <main className="max-w-2xl mx-auto px-4 py-8 md:py-12">
+            {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
             {/* GK modal can also appear on input view if triggered */}
             {matcherModalOpen && (
                 <PlayerMatcherModal
@@ -805,11 +826,28 @@ export default function WeeklyPage() {
                         <p className="text-gray-400 text-sm">Pega la lista de WhatsApp o texto aquí abajo.</p>
                     </div>
                 </div>
-                {names.length > 0 && (
+                
+                <div className="flex items-center gap-3">
+                    {loading ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-600 mr-4" />
+                    ) : user && (
+                        <button 
+                            onClick={() => setProfileOpen(true)}
+                            className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hover:bg-white/10 hover:border-emerald-500/30 transition-all group"
+                        >
+                            {user.role === 'Admin' ? <Shield className="w-4 h-4 text-purple-400" /> : <User className="w-4 h-4 text-emerald-400" />}
+                            <span className="text-xs font-bold text-gray-300 group-hover:text-emerald-400">
+                                {user.displayName} <span className="text-gray-500 font-normal group-hover:text-emerald-500/50 hidden xs:inline">({user.role})</span>
+                            </span>
+                        </button>
+                    )}
+
+                    {names.length > 0 && (
                     <button onClick={clearAll} className="text-gray-500 hover:text-red-500 p-2 transition-colors" title="Limpiar todo">
                         <Trash2 className="w-6 h-6" />
                     </button>
                 )}
+                </div>
             </header>
 
             <section className="space-y-6">

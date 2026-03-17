@@ -1,6 +1,6 @@
 -- FurbolAI Database Schema
 -- Creation date: 2026-03-09
--- Last updated:  2026-03-13 (v1.1.3)
+-- Last updated:  2026-03-16 (v1.2.1)
 
 CREATE DATABASE IF NOT EXISTS furbolai;
 USE furbolai;
@@ -55,6 +55,7 @@ ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS t_id INT NULL;
 
 CREATE TABLE IF NOT EXISTS sorteos (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    t_id INT NULL,
     equipos_json JSON NOT NULL,
     goles_eq1 INT NULL,
     goles_eq2 INT NULL,

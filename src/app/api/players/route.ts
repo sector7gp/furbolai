@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { verifySession } from '@/lib/auth-util';
+import { cookies } from 'next/headers';
 
 interface NGConfig {
     w_fitness: number;
@@ -52,6 +54,14 @@ async function getNGConfig(): Promise<NGConfig> {
     return { w_fitness: 1, w_defensive: 1, w_strengths: 1, w_intensity: 1, age_min: 20, age_max: 32, age_decay: 0.02 };
 }
 
+async function isAuthorized() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('session')?.value;
+    if (!token) return false;
+    const session = await verifySession(token);
+    return session && (session.role === 'Admin' || session.role === 'Entrenador');
+}
+
 export async function GET() {
     try {
         const [rows] = await pool.query("SELECT * FROM jugadores WHERE status != 'D' ORDER BY alias ASC");
@@ -63,14 +73,15 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    if (!await isAuthorized()) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
     try {
         const body = await request.json();
         const { player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, status } = body;
 
-        // Fetch current config
         const config = await getNGConfig();
 
-        // Format date to YYYY-MM-DD if it exists
         let formattedDate = null;
         if (birth) {
             const dateObj = new Date(birth);
@@ -108,6 +119,9 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+    if (!await isAuthorized()) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
     try {
         const body = await request.json();
         const { id, player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, status } = body;
@@ -116,7 +130,6 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
 
-        // Format date to YYYY-MM-DD if it exists
         let formattedDate = null;
         if (birth) {
             const dateObj = new Date(birth);
@@ -125,9 +138,7 @@ export async function PUT(request: Request) {
             }
         }
 
-        // Fetch current config
         const config = await getNGConfig();
-
         const ng = calculateNG({ fitness: fitness || 5, defensive: defensive || 5, strengths: strengths || 5, intensity: intensity || 5, birth: formattedDate || '' }, config);
 
         await pool.query(

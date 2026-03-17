@@ -64,7 +64,8 @@ export async function POST(req: NextRequest) {
             username: user.username,
             role: user.role,
             mustChangePassword: user.must_change_password,
-            displayName
+            displayName,
+            playerId: user.player_id
         });
 
         const response = NextResponse.json({ 

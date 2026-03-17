@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft, RefreshCcw, LogOut, Shield, User } from 'lucide-react';
 import { useUser } from '@/components/UserContext';
+import ProfileModal from '@/components/ProfileModal';
 
 interface Player {
     id: number;
@@ -157,7 +158,7 @@ function RadarModal({ player, onClose }: { player: Player, onClose: () => void }
     );
 }
 export default function PlayersPage() {
-    const { user, logout } = useUser();
+    const { user, loading: userLoading, logout } = useUser();
     const [selectedRadarPlayer, setSelectedRadarPlayer] = useState<Player | null>(null);
     const [players, setPlayers] = useState<Player[]>([]);
     const [search, setSearch] = useState('');
@@ -165,6 +166,7 @@ export default function PlayersPage() {
     const [saving, setSaving] = useState(false);
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: keyof Player | 'age'; direction: 'asc' | 'desc' }>({
         key: 'status',
         direction: 'asc'
@@ -282,6 +284,7 @@ export default function PlayersPage() {
 
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
             <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-4">
                     <Link href="/" className="p-2 hover:bg-white/5 rounded-full transition-colors hidden sm:block">
@@ -290,11 +293,18 @@ export default function PlayersPage() {
                     <h1 className="text-3xl font-bold gradient-text">Gestión de Jugadores</h1>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4">
-                    {user && (
-                        <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hidden md:flex">
+                    {userLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-600 mr-4" />
+                    ) : user && (
+                        <button 
+                            onClick={() => setProfileOpen(true)}
+                            className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hover:bg-white/10 hover:border-emerald-500/30 transition-all group"
+                        >
                             {user.role === 'Admin' ? <Shield className="w-4 h-4 text-purple-400" /> : <User className="w-4 h-4 text-emerald-400" />}
-                            <span className="text-xs font-bold text-gray-300">{user.username} <span className="text-gray-500 font-normal">({user.role})</span></span>
-                        </div>
+                            <span className="text-xs font-bold text-gray-300 group-hover:text-emerald-400">
+                                {user.displayName} <span className="text-gray-500 font-normal group-hover:text-emerald-500/50 hidden xs:inline">({user.role})</span>
+                            </span>
+                        </button>
                     )}
                     
                     <button

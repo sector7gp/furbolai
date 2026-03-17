@@ -27,7 +27,7 @@ export default function Footer() {
                     {/* Copyright Section - Left in Desktop, Middle in Mobile */}
                     <div className="flex flex-col gap-2 text-center lg:text-left order-2 lg:order-1">
                         <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-1 text-gray-400 text-sm">
-                            <span className="font-semibold text-gray-300">© {currentYear} FurbolAI</span>
+                            <span className="font-semibold text-gray-300">© {currentYear} Pan Ai Queso</span>
                             <span className="hidden lg:inline text-gray-600">|</span>
                             <div className="flex items-center gap-1.5 group">
                                 <Cpu className="w-3.5 h-3.5 text-emerald-500 group-hover:animate-pulse" />

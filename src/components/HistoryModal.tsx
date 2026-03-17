@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, Hash, Loader2, ChevronRight, Users } from 'lucide-react';
+import { X, Calendar, Hash, Loader2, ChevronRight, Users, Save, ShieldCheck } from 'lucide-react';
 import { posLabel, Player } from '@/lib/team-generator';
+import { useUser } from './UserContext';
 
 interface HistoryModalProps {
     onClose: () => void;
@@ -10,6 +11,7 @@ interface HistoryModalProps {
 
 interface Draw {
     id: number;
+    t_id: number | null;
     equipos_json: any;
     goles_eq1: number | null;
     goles_eq2: number | null;
@@ -17,15 +19,26 @@ interface Draw {
 }
 
 export default function HistoryModal({ onClose }: HistoryModalProps) {
+    const { user } = useUser();
     const [draws, setDraws] = useState<Draw[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDraw, setSelectedDraw] = useState<Draw | null>(null);
+    const [editingGoals, setEditingGoals] = useState<{ g1: string, g2: string }>({ g1: '', g2: '' });
+    const [saving, setSaving] = useState(false);
+
+    const isAuthorized = user?.role === 'Admin' || user?.role === 'Entrenador';
 
     useEffect(() => {
         fetch('/api/draws')
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data)) setDraws(data);
+                if (Array.isArray(data)) {
+                    const parsedData = data.map(draw => ({
+                        ...draw,
+                        equipos_json: typeof draw.equipos_json === 'string' ? JSON.parse(draw.equipos_json) : draw.equipos_json
+                    }));
+                    setDraws(parsedData);
+                }
                 setLoading(false);
             })
             .catch(err => {
@@ -33,6 +46,46 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
                 setLoading(false);
             });
     }, []);
+
+    useEffect(() => {
+        if (selectedDraw) {
+            setEditingGoals({
+                g1: selectedDraw.goles_eq1 !== null ? selectedDraw.goles_eq1.toString() : '',
+                g2: selectedDraw.goles_eq2 !== null ? selectedDraw.goles_eq2.toString() : ''
+            });
+        }
+    }, [selectedDraw]);
+
+    const handleSaveScore = async () => {
+        if (!selectedDraw || !isAuthorized) return;
+        setSaving(true);
+        try {
+            const res = await fetch('/api/draws', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: selectedDraw.id,
+                    goles_eq1: editingGoals.g1 === '' ? null : parseInt(editingGoals.g1),
+                    goles_eq2: editingGoals.g2 === '' ? null : parseInt(editingGoals.g2)
+                })
+            });
+
+            if (res.ok) {
+                const updatedDraw = {
+                    ...selectedDraw,
+                    goles_eq1: editingGoals.g1 === '' ? null : parseInt(editingGoals.g1),
+                    goles_eq2: editingGoals.g2 === '' ? null : parseInt(editingGoals.g2)
+                };
+                setDraws(prev => prev.map(d => d.id === updatedDraw.id ? updatedDraw : d));
+                setSelectedDraw(updatedDraw);
+                alert('Resultado actualizado correctamente');
+            }
+        } catch (error) {
+            console.error('Error saving scores:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
@@ -47,7 +100,7 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-            <div className="glass w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden border-amber-500/30 shadow-2xl shadow-amber-500/10 flex flex-col">
+            <div className="glass w-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden border-amber-500/30 shadow-2xl shadow-amber-500/10 flex flex-col">
                 <div className="bg-amber-500/10 border-b border-amber-500/20 p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Calendar className="w-7 h-7 text-amber-400" />
@@ -63,7 +116,7 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
 
                 <div className="flex-grow overflow-hidden flex flex-col md:flex-row">
                     {/* List */}
-                    <div className="w-full md:w-1/3 border-r border-white/5 overflow-y-auto p-4 space-y-2">
+                    <div className="w-full md:w-1/3 border-r border-white/5 overflow-y-auto p-4 space-y-2 custom-scrollbar">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                                 <Loader2 className="w-8 h-8 animate-spin mb-2" />
@@ -82,8 +135,8 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
                                             : 'bg-white/5 border-white/10 hover:bg-white/10 text-gray-400'}`}
                                 >
                                     <div className="space-y-1">
-                                        <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider">
-                                            <Hash className="w-3 h-3" /> {draw.id}
+                                        <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider">
+                                            <Hash className="w-3 h-3" /> {draw.id} {draw.t_id && <span className="text-amber-500/60 ml-2">Equipo #{draw.t_id}</span>}
                                         </div>
                                         <div className="font-bold text-sm">{formatDate(draw.fecha_creacion)}</div>
                                         {draw.goles_eq1 !== null && (
@@ -99,22 +152,60 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
                     </div>
 
                     {/* Detail */}
-                    <div className="flex-grow overflow-y-auto p-6 bg-black/20">
+                    <div className="flex-grow overflow-y-auto p-6 bg-black/20 custom-scrollbar">
                         {selectedDraw ? (
                             <div className="space-y-6">
-                                <div className="flex justify-between items-end border-b border-white/5 pb-4">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-white/5 pb-4 gap-4">
                                     <div>
-                                        <h3 className="text-2xl font-bold text-white">Sorteo #{selectedDraw.id}</h3>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="text-2xl font-bold text-white">Sorteo #{selectedDraw.id}</h3>
+                                            {selectedDraw.t_id && <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border border-amber-500/20">Grupo {selectedDraw.t_id}</span>}
+                                        </div>
                                         <p className="text-gray-400">{formatDate(selectedDraw.fecha_creacion)}</p>
                                     </div>
-                                    {selectedDraw.goles_eq1 !== null && (
-                                        <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl text-center min-w-[100px]">
-                                            <p className="text-[10px] uppercase font-bold text-emerald-500/60 mb-1">Resultado Final</p>
-                                            <span className="text-2xl font-black text-emerald-400">
-                                                {selectedDraw.goles_eq1} — {selectedDraw.goles_eq2}
-                                            </span>
-                                        </div>
-                                    )}
+                                    
+                                    {/* Score Section */}
+                                    <div className="w-full sm:w-auto">
+                                        {isAuthorized ? (
+                                            <div className="bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <input 
+                                                        type="number" 
+                                                        value={editingGoals.g1} 
+                                                        onChange={e => setEditingGoals({ ...editingGoals, g1: e.target.value })}
+                                                        className="w-10 h-10 text-center bg-black/40 border border-white/10 rounded-lg text-emerald-400 font-bold focus:ring-1 focus:ring-emerald-500 outline-none"
+                                                        placeholder="-"
+                                                    />
+                                                    <span className="text-gray-600 font-bold">vs</span>
+                                                    <input 
+                                                        type="number" 
+                                                        value={editingGoals.g2} 
+                                                        onChange={e => setEditingGoals({ ...editingGoals, g2: e.target.value })}
+                                                        className="w-10 h-10 text-center bg-black/40 border border-white/10 rounded-lg text-emerald-400 font-bold focus:ring-1 focus:ring-emerald-500 outline-none"
+                                                        placeholder="-"
+                                                    />
+                                                </div>
+                                                <button 
+                                                    onClick={handleSaveScore}
+                                                    disabled={saving}
+                                                    className="bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                                >
+                                                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                                </button>
+                                            </div>
+                                        ) : selectedDraw.goles_eq1 !== null ? (
+                                            <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl text-center min-w-[100px]">
+                                                <p className="text-[10px] uppercase font-bold text-emerald-500/60 mb-1">Resultado Final</p>
+                                                <span className="text-2xl font-black text-emerald-400">
+                                                    {selectedDraw.goles_eq1} — {selectedDraw.goles_eq2}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="text-gray-600 text-[10px] font-bold uppercase tracking-widest border border-dashed border-white/10 px-4 py-3 rounded-xl">
+                                                Pendiente de resultado
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { verifySession } from '@/lib/auth-util';
+import { cookies } from 'next/headers';
+
+async function isAdmin() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('session')?.value;
+    if (!token) return false;
+    const session = await verifySession(token);
+    return session && session.role === 'Admin';
+}
 
 export async function GET() {
+    // GET can be public or at least for all logged in users
     try {
         const [rows]: any = await pool.query('SELECT * FROM configuracion WHERE id = 1');
         if (rows.length > 0) {
@@ -26,6 +37,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+    if (!await isAdmin()) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
     try {
         const body = await request.json();
         const { teamCount, t_id, w_fitness, w_defensive, w_strengths, w_intensity, age_min, age_max, age_decay } = body;

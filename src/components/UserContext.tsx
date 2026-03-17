@@ -8,6 +8,7 @@ interface User {
     username: string;
     role: 'Jugador' | 'Entrenador' | 'Admin';
     displayName: string;
+    playerId: number | null;
 }
 
 interface UserContextType {
@@ -30,12 +31,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                 if (res.ok) {
                     const data = await res.json();
                     setUser(data.user);
-                } else if (res.status === 401) {
-                    // Si no hay sesión y no estamos en login, delegamos al middleware o redirigimos
+                } else {
                     setUser(null);
+                    // Redirect to login if not already there or in other public pages
+                    const publicPages = ['/login', '/public']; 
+                    if (!publicPages.includes(window.location.pathname)) {
+                        console.log('[UserContext] No active session, redirecting to login');
+                        router.push('/login');
+                    }
                 }
             } catch (err) {
-                console.error('Error fetching user:', err);
+                console.error('[UserContext] Error fetching user:', err);
+                setUser(null);
             } finally {
                 setLoading(false);
             }

@@ -58,7 +58,7 @@ export default function LoginPage() {
                         <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-4 border border-emerald-500/20">
                             <ShieldCheck className="w-8 h-8 text-emerald-400" />
                         </div>
-                        <h1 className="text-3xl font-black text-white tracking-tight">Furbol<span className="text-emerald-400">AI</span></h1>
+                        <h1 className="text-3xl font-black gradient-text tracking-tight">Pan Ai Queso</h1>
                         <p className="text-gray-500 text-sm mt-2 uppercase tracking-[0.2em] font-bold">Gestión de Acceso</p>
                     </div>
 
