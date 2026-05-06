@@ -19,6 +19,18 @@ import {
     AlertCircle
 } from 'lucide-react';
 
+const POSITIONS = [
+    { sigla: 'GK', label: 'Arquero' },
+    { sigla: 'DF', label: 'Defensor' },
+    { sigla: 'LI', label: 'Lat. Izquierdo' },
+    { sigla: 'LD', label: 'Lat. Derecho' },
+    { sigla: 'MC', label: 'Mediocampista' },
+    { sigla: 'MI', label: 'Vol. Izquierdo' },
+    { sigla: 'MD', label: 'Vol. Derecho' },
+    { sigla: 'MP', label: 'Mediapunta' },
+    { sigla: 'ST', label: 'Delantero' },
+];
+
 function JoinForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
