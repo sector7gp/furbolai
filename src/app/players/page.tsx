@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft, RefreshCcw, LogOut, Shield, User } from 'lucide-react';
+import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft, RefreshCcw, LogOut, Shield, User, Link2, Check } from 'lucide-react';
 import { useUser } from '@/components/UserContext';
 import ProfileModal from '@/components/ProfileModal';
 
@@ -171,6 +171,14 @@ export default function PlayersPage() {
         key: 'status',
         direction: 'asc'
     });
+    const [isCopying, setIsCopying] = useState(false);
+
+    const copyInviteLink = () => {
+        const url = `${window.location.origin}/join`;
+        navigator.clipboard.writeText(url);
+        setIsCopying(true);
+        setTimeout(() => setIsCopying(false), 2000);
+    };
 
     useEffect(() => {
         fetchPlayers();
@@ -316,13 +324,27 @@ export default function PlayersPage() {
                     </button>
 
                     {(user?.role === 'Admin' || user?.role === 'Entrenador') && (
-                        <button
-                            onClick={() => setIsCreating(true)}
-                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-all shadow-lg shadow-emerald-500/20"
-                        >
-                            <UserPlus className="w-5 h-5" />
-                            <span className="hidden sm:inline">Nuevo Jugador</span>
-                        </button>
+                        <>
+                            <button
+                                onClick={copyInviteLink}
+                                className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-all border ${
+                                    isCopying 
+                                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' 
+                                    : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                                }`}
+                                title="Copiar link de invitación"
+                            >
+                                {isCopying ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                                <span className="hidden sm:inline">{isCopying ? '¡Copiado!' : 'Link Invitación'}</span>
+                            </button>
+                            <button
+                                onClick={() => setIsCreating(true)}
+                                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-all shadow-lg shadow-emerald-500/20"
+                            >
+                                <UserPlus className="w-5 h-5" />
+                                <span className="hidden sm:inline">Nuevo Jugador</span>
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
