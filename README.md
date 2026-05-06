@@ -70,6 +70,12 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
     ```
     *(Ejecuta el comando que devuelva `pm2 startup` para finalizar la configuración del sistema).*
 
+5.  **Ejecutar migraciones de base de datos:**
+    Si es la primera vez que despliegas esta versión (v1.2.1+), corre el script de migración para habilitar el sistema de invitaciones:
+    ```bash
+    npm run db:migrate-invitations
+    ```
+
 ## 📝 Changelog (Historial de Cambios)
 
 ### [1.2.1] - 2026-05-06
