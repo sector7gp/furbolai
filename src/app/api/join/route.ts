@@ -48,12 +48,31 @@ async function getNGConfig(): Promise<NGConfig> {
 }
 
 export async function POST(request: Request) {
+    const connection = await pool.getConnection();
     try {
         const body = await request.json();
-        const { player, alias, birth, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity } = body;
+        const { player, alias, birth, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, token } = body;
 
-        // Validation
+        if (!token) {
+            return NextResponse.json({ error: 'Token de invitación requerido' }, { status: 400 });
+        }
+
+        await connection.beginTransaction();
+
+        // 1. Verify and Lock token
+        const [invitations]: any = await connection.query(
+            'SELECT id FROM invitaciones WHERE token = ? AND usado = FALSE AND (fecha_expiracion IS NULL OR fecha_expiracion > NOW()) FOR UPDATE',
+            [token]
+        );
+
+        if (invitations.length === 0) {
+            await connection.rollback();
+            return NextResponse.json({ error: 'Invitación inválida, usada o expirada' }, { status: 403 });
+        }
+
+        // 2. Validation
         if (!player || !mail || !u_id) {
+            await connection.rollback();
             return NextResponse.json({ error: 'Faltan datos obligatorios (Nombre, Email, DNI)' }, { status: 400 });
         }
 
@@ -67,11 +86,6 @@ export async function POST(request: Request) {
             }
         }
 
-        // Posiciones logic from existing app:
-        // p_name: names like 'GK,LI'
-        // pos: number of primary position (we can derive this or just leave it)
-        // In the existing POST, 'pos' is passed but here we only have p_name.
-        // Let's use the first position in p_name as 'pos' if available.
         const posMap: Record<string, string> = {
             'GK': '1', 'DF': '2', 'LI': '3', 'LD': '4', 'MC': '5', 'MI': '6', 'MD': '7', 'MP': '8', 'ST': '9'
         };
@@ -86,7 +100,8 @@ export async function POST(request: Request) {
             birth: formattedDate || '' 
         }, config);
 
-        const [result] = await pool.query(
+        // 3. Create Player
+        const [result] = await connection.query(
             `INSERT INTO jugadores (player, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, ng, status) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
@@ -107,13 +122,21 @@ export async function POST(request: Request) {
             ]
         );
 
+        // 4. Consume Token
+        await connection.query('UPDATE invitaciones SET usado = TRUE WHERE token = ?', [token]);
+
+        await connection.commit();
+
         return NextResponse.json({ 
             success: true,
             id: (result as any).insertId,
             ng
         });
     } catch (error) {
+        await connection.rollback();
         console.error('Join Error:', error);
         return NextResponse.json({ error: 'Error al registrar el jugador' }, { status: 500 });
+    } finally {
+        connection.release();
     }
 }

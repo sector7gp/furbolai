@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
     User, 
     Mail, 
@@ -15,25 +15,19 @@ import {
     CheckCircle2,
     Loader2,
     ChevronRight,
-    ChevronLeft
+    ChevronLeft,
+    AlertCircle
 } from 'lucide-react';
 
-const POSITIONS = [
-    { sigla: 'GK', label: 'Arquero' },
-    { sigla: 'DF', label: 'Defensor' },
-    { sigla: 'LI', label: 'Lat. Izquierdo' },
-    { sigla: 'LD', label: 'Lat. Derecho' },
-    { sigla: 'MC', label: 'Mediocampista' },
-    { sigla: 'MI', label: 'Vol. Izquierdo' },
-    { sigla: 'MD', label: 'Vol. Derecho' },
-    { sigla: 'MP', label: 'Mediapunta' },
-    { sigla: 'ST', label: 'Delantero' },
-];
-
-export default function JoinPage() {
+function JoinForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const token = searchParams.get('token');
+    
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [validating, setValidating] = useState(true);
+    const [isValid, setIsValid] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
 
@@ -50,6 +44,36 @@ export default function JoinPage() {
         strengths: 3,
         intensity: 3,
     });
+
+    useEffect(() => {
+        if (!token) {
+            setValidating(false);
+            setIsValid(false);
+            setError('Se requiere un link de invitación válido.');
+            return;
+        }
+
+        const validateToken = async () => {
+            try {
+                const res = await fetch(`/api/invitations?token=${token}`);
+                const data = await res.json();
+                if (data.valid) {
+                    setIsValid(true);
+                    if (data.t_id) {
+                        setFormData(prev => ({ ...prev, t_id: data.t_id.toString() }));
+                    }
+                } else {
+                    setError(data.error || 'El link ha expirado o es inválido.');
+                }
+            } catch (err) {
+                setError('Error al validar la invitación.');
+            } finally {
+                setValidating(false);
+            }
+        };
+
+        validateToken();
+    }, [token]);
 
     const handleChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -75,6 +99,7 @@ export default function JoinPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
+                    token, // Pass token for verification and consumption
                     p_name: formData.p_name.join(','),
                     t_id: formData.t_id ? parseInt(formData.t_id) : null
                 }),
@@ -96,6 +121,39 @@ export default function JoinPage() {
     const isStep1Valid = formData.player && formData.mail && formData.u_id && formData.birth;
     const isStep2Valid = formData.p_name.length > 0;
 
+    if (validating) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
+                    <p className="text-gray-400 font-medium animate-pulse">Validando invitación...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isValid && !success) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <div className="glass max-w-md w-full p-8 rounded-3xl text-center space-y-6">
+                    <div className="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto">
+                        <AlertCircle className="w-10 h-10 text-rose-400" />
+                    </div>
+                    <div className="space-y-2">
+                        <h1 className="text-2xl font-bold text-white">Link Inválido</h1>
+                        <p className="text-gray-400">{error}</p>
+                    </div>
+                    <button 
+                        onClick={() => router.push('/')}
+                        className="w-full py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold border border-white/10 transition-all"
+                    >
+                        Volver al Inicio
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (success) {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
@@ -105,7 +163,7 @@ export default function JoinPage() {
                     </div>
                     <div className="space-y-2">
                         <h1 className="text-3xl font-bold text-white">¡Bienvenido!</h1>
-                        <p className="text-gray-400">Tu perfil ha sido creado correctamente. Ya puedes participar en los sorteos.</p>
+                        <p className="text-gray-400">Tu perfil ha sido creado correctamente. Tu invitación ha sido procesada.</p>
                     </div>
                     <button 
                         onClick={() => router.push('/')}
@@ -349,5 +407,17 @@ export default function JoinPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function JoinPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+                <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
+            </div>
+        }>
+            <JoinForm />
+        </Suspense>
     );
 }

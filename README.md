@@ -74,10 +74,12 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ### [1.2.1] - 2026-05-06
 #### Añadido
-- **Sistema de Invitación Pública**: Implementación de un link de invitación (`/join`) que permite a nuevos jugadores registrarse por su cuenta sin intervención del admin.
+- **Sistema de Invitación Segura**: Implementación de links de invitación de un solo uso con tokens temporales (`/join?token=...`).
+- **Validación de Tokens**: Verificación en tiempo real del estado de la invitación (validez, expiración y uso único).
 - **Onboarding Form**: Formulario premium con estética modernizada para la recolección de datos de nuevos jugadores (Nombre, Alias, Fecha de Nacimiento, Email, DNI, ID de Equipo, Posiciones y Perfil Técnico).
-- **Acceso Rápido**: Botón en la sección de gestión de jugadores para copiar el link de invitación directamente al portapapeles.
-- **API de Registro Abierto**: Nuevo endpoint público para procesar las altas de jugadores invitados con cálculo automático de NG.
+- **Consumo de Invitación**: Los tokens se invalidan automáticamente tras el registro exitoso del jugador.
+- **Acceso Rápido**: Botón en la sección de gestión de jugadores que genera dinámicamente el token y copia el link seguro al portapapeles.
+- **API Protegida**: Endpoints dedicados para la generación (requiere auth) y validación/consumo de invitaciones.
 
 ### [1.2.0] - 2026-03-14
 #### Añadido

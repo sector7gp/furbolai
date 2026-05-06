@@ -173,11 +173,19 @@ export default function PlayersPage() {
     });
     const [isCopying, setIsCopying] = useState(false);
 
-    const copyInviteLink = () => {
-        const url = `${window.location.origin}/join`;
-        navigator.clipboard.writeText(url);
-        setIsCopying(true);
-        setTimeout(() => setIsCopying(false), 2000);
+    const copyInviteLink = async () => {
+        try {
+            const res = await fetch('/api/invitations', { method: 'POST', body: JSON.stringify({}) });
+            const data = await res.json();
+            if (data.token) {
+                const url = `${window.location.origin}/join?token=${data.token}`;
+                navigator.clipboard.writeText(url);
+                setIsCopying(true);
+                setTimeout(() => setIsCopying(false), 2000);
+            }
+        } catch (err) {
+            console.error('Error al generar invitación:', err);
+        }
     };
 
     useEffect(() => {
