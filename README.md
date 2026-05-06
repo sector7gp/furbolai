@@ -72,6 +72,13 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ## 📝 Changelog (Historial de Cambios)
 
+### [1.2.1] - 2026-05-06
+#### Añadido
+- **Sistema de Invitación Pública**: Implementación de un link de invitación (`/join`) que permite a nuevos jugadores registrarse por su cuenta sin intervención del admin.
+- **Onboarding Form**: Formulario premium con estética modernizada para la recolección de datos de nuevos jugadores (Nombre, Alias, Fecha de Nacimiento, Email, DNI, ID de Equipo, Posiciones y Perfil Técnico).
+- **Acceso Rápido**: Botón en la sección de gestión de jugadores para copiar el link de invitación directamente al portapapeles.
+- **API de Registro Abierto**: Nuevo endpoint público para procesar las altas de jugadores invitados con cálculo automático de NG.
+
 ### [1.2.0] - 2026-03-14
 #### Añadido
 - **Rebranding total**: La aplicación pasa a llamarse **Pan Ai Queso**.
