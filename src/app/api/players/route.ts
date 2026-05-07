@@ -136,6 +136,14 @@ export async function POST(request: Request) {
 
         const ng = calculateNG({ fitness: fitness || 5, defensive: defensive || 5, strengths: strengths || 5, intensity: intensity || 5, birth: formattedDate || '' }, config);
         
+        // Verificar sobrenombre único
+        if (alias) {
+            const [existing]: any = await pool.query('SELECT id FROM jugadores WHERE alias = ? AND status != "D"', [alias]);
+            if (existing.length > 0) {
+                return NextResponse.json({ error: `El sobrenombre "${alias}" ya está en uso.` }, { status: 400 });
+            }
+        }
+
         await connection.beginTransaction();
 
         const [result] = await connection.query(
@@ -201,6 +209,14 @@ export async function PUT(request: Request) {
 
         const config = await getNGConfig();
         const ng = calculateNG({ fitness: fitness || 5, defensive: defensive || 5, strengths: strengths || 5, intensity: intensity || 5, birth: formattedDate || '' }, config);
+
+        // Verificar sobrenombre único (excluyendo al propio jugador)
+        if (alias) {
+            const [existing]: any = await pool.query('SELECT id FROM jugadores WHERE alias = ? AND id != ? AND status != "D"', [alias, id]);
+            if (existing.length > 0) {
+                return NextResponse.json({ error: `El sobrenombre "${alias}" ya está en uso.` }, { status: 400 });
+            }
+        }
 
         await connection.beginTransaction();
 

@@ -78,6 +78,15 @@ export async function POST(request: Request) {
 
         const config = await getNGConfig();
 
+        // 3. Duplicate Alias Validation
+        if (alias) {
+            const [existing]: any = await connection.query('SELECT id FROM jugadores WHERE alias = ? AND status != "D"', [alias]);
+            if (existing.length > 0) {
+                await connection.rollback();
+                return NextResponse.json({ error: `El sobrenombre "${alias}" ya está en uso.` }, { status: 400 });
+            }
+        }
+
         let formattedDate = null;
         if (birth) {
             const dateObj = new Date(birth);

@@ -244,6 +244,9 @@ export default function PlayersPage() {
                 setPlayers(prev => [...prev, savedPlayer]);
                 setIsCreating(false);
                 setEditingPlayer(savedPlayer);
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Error al crear el jugador');
             }
         } catch (err) {
             console.error('Error creating player:', err);
@@ -268,6 +271,8 @@ export default function PlayersPage() {
                     setEditingPlayer(player);
                 }
             } else {
+                const data = await res.json();
+                alert(data.error || 'Error al actualizar el jugador');
                 fetchPlayers(false);
             }
         } catch (err) {
