@@ -15,11 +15,27 @@ async function getAuthorizedTeams() {
         return rows;
     }
 
-    const [rows]: any = await pool.query(
+    // Teams authorized via usuario_equipos (management)
+    const [mgmtRows]: any = await pool.query(
         'SELECT e.* FROM equipos e JOIN usuario_equipos ue ON e.id = ue.equipo_id WHERE ue.usuario_id = ?',
         [session.userId]
     );
-    return rows;
+
+    let allTeams = [...mgmtRows];
+
+    // If player, also include teams they belong to
+    if (session.role === 'Jugador' && session.playerId) {
+        const [playerRows]: any = await pool.query(
+            'SELECT e.* FROM equipos e JOIN jugador_equipos je ON e.id = je.equipo_id WHERE je.jugador_id = ?',
+            [session.playerId]
+        );
+        allTeams = [...allTeams, ...playerRows];
+    }
+
+    // De-duplicate by ID
+    const uniqueTeams = Array.from(new Map(allTeams.map(item => [item.id, item])).values());
+
+    return uniqueTeams;
 }
 
 export async function GET() {

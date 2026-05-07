@@ -61,9 +61,23 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
     try {
-        // Obtenemos los equipos a los que el usuario tiene acceso
-        const [userTeams]: any = await pool.query('SELECT equipo_id FROM usuario_equipos WHERE usuario_id = ?', [session.userId]);
-        const teamIds = userTeams.map((t: any) => t.equipo_id);
+        let teamIds: number[] = [];
+        
+        if (session.role === 'Admin') {
+            // Admins see everything
+        } else {
+            // Authorized teams via usuario_equipos (for managers/trainers)
+            const [userTeams]: any = await pool.query('SELECT equipo_id FROM usuario_equipos WHERE usuario_id = ?', [session.userId]);
+            teamIds = userTeams.map((t: any) => t.equipo_id);
+
+            // If user is a player, also include teams they belong to
+            if (session.role === 'Jugador' && session.playerId) {
+                const [playerTeams]: any = await pool.query('SELECT equipo_id FROM jugador_equipos WHERE jugador_id = ?', [session.playerId]);
+                const ptIds = playerTeams.map((t: any) => t.equipo_id);
+                // Merge and unique
+                teamIds = Array.from(new Set([...teamIds, ...ptIds]));
+            }
+        }
 
         if (teamIds.length === 0 && session.role !== 'Admin') {
             return NextResponse.json([]);
