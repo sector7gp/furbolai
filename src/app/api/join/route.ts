@@ -112,7 +112,7 @@ export async function POST(request: Request) {
         // 3. Create Player
         const [result] = await connection.query(
             `INSERT INTO jugadores (player, alias, birth, pos, p_name, mail, u_id, fitness, defensive, strengths, intensity, ng, status) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 player, 
                 alias || null, 
