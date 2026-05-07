@@ -23,6 +23,7 @@ interface Player {
     intensity: number;
     ng: number;
     status: 'A' | 'I';
+    team_ids?: number[];
 }
 
 const POSITIONS = [
@@ -172,6 +173,7 @@ export default function PlayersPage() {
         direction: 'asc'
     });
     const [isCopying, setIsCopying] = useState(false);
+    const [availableTeams, setAvailableTeams] = useState<{ id: number, nombre: string }[]>([]);
 
     const copyInviteLink = async () => {
         try {
@@ -190,7 +192,18 @@ export default function PlayersPage() {
 
     useEffect(() => {
         fetchPlayers();
+        fetchTeams();
     }, []);
+
+    const fetchTeams = async () => {
+        try {
+            const res = await fetch('/api/teams');
+            const data = await res.json();
+            if (Array.isArray(data)) setAvailableTeams(data);
+        } catch (err) {
+            console.error('Error fetching teams:', err);
+        }
+    };
 
     const fetchPlayers = (showLoading = true) => {
         if (showLoading) setLoading(true);
@@ -482,6 +495,7 @@ export default function PlayersPage() {
                     onClose={() => setIsCreating(false)}
                     onSave={handleCreatePlayer}
                     saving={saving}
+                    availableTeams={availableTeams}
                 />
             )}
 
@@ -498,19 +512,30 @@ export default function PlayersPage() {
                     onClose={() => setEditingPlayer(null)}
                     onSave={handleUpdatePlayer}
                     saving={saving}
+                    availableTeams={availableTeams}
                 />
             )}
         </main>
     );
 }
 
-function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSave: (p: Partial<Player>) => void, saving: boolean }) {
+function NewPlayerModal({ onClose, onSave, saving, availableTeams }: { 
+    onClose: () => void, 
+    onSave: (p: Partial<Player>) => void, 
+    saving: boolean,
+    availableTeams: { id: number, nombre: string }[]
+}) {
     const [nombre, setNombre] = useState('');
     const [mobil, setCelular] = useState('');
     const [fechaNacimiento, setFechaNacimiento] = useState('');
     const [mail, setMail] = useState('');
     const [u_id, setDni] = useState('');
     const [p_name, setPName] = useState('');
+    const [team_ids, setTeamIds] = useState<number[]>([]);
+
+    const handleToggleTeam = (id: number) => {
+        setTeamIds(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]);
+    };
 
     const handleTogglePosition = (sigla: string) => {
         const currentPositions = p_name ? p_name.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -532,7 +557,7 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
 
     const handleSubmit = () => {
         if (!isFormValid) return;
-        onSave({ player: nombre, mobil, birth: fechaNacimiento, mail, u_id, p_name });
+        onSave({ player: nombre, mobil, birth: fechaNacimiento, mail, u_id, p_name, team_ids });
     };
 
     return (
@@ -608,6 +633,54 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
                             />
                         </div>
                         <div className="col-span-2">
+                            <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Equipos</label>
+                            <div className="flex flex-wrap gap-2">
+                                {availableTeams.map(team => {
+                                    const isSelected = team_ids.includes(team.id);
+                                    return (
+                                        <button
+                                            key={team.id}
+                                            type="button"
+                                            onClick={() => handleToggleTeam(team.id)}
+                                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
+                                                isSelected 
+                                                ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-lg shadow-blue-500/10' 
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                                            }`}
+                                        >
+                                            {team.nombre}
+                                        </button>
+                                    );
+                                })}
+                                {availableTeams.length === 0 && <span className="text-[10px] text-gray-600 italic">No tienes equipos asignados</span>}
+                            </div>
+                        </div>
+
+                        <div className="col-span-2">
+                            <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Equipos</label>
+                            <div className="flex flex-wrap gap-2">
+                                {availableTeams.map(team => {
+                                    const isSelected = (formData.team_ids || []).includes(team.id);
+                                    return (
+                                        <button
+                                            key={team.id}
+                                            type="button"
+                                            onClick={() => handleToggleTeam(team.id)}
+                                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
+                                                isSelected 
+                                                ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-lg shadow-blue-500/10' 
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                                            }`}
+                                        >
+                                            {team.nombre}
+                                        </button>
+                                    );
+                                })}
+                                {availableTeams.length === 0 && <span className="text-[10px] text-gray-600 italic">No tienes equipos asignados</span>}
+                            </div>
+                        </div>
+
+                        <div className="col-span-2">
                             <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Posiciones</label>
                             <div className="flex flex-wrap gap-2">
                                 {POSITIONS.map(pos => {
@@ -653,7 +726,13 @@ function NewPlayerModal({ onClose, onSave, saving }: { onClose: () => void, onSa
     );
 }
 
-function EditModal({ player, onClose, onSave, saving }: { player: Player, onClose: () => void, onSave: (p: Player) => void, saving: boolean }) {
+function EditModal({ player, onClose, onSave, saving, availableTeams }: { 
+    player: Player, 
+    onClose: () => void, 
+    onSave: (p: Player) => void, 
+    saving: boolean,
+    availableTeams: { id: number, nombre: string }[]
+}) {
     const { user } = useUser();
     const [formData, setFormData] = useState<Player>({ ...player });
 
@@ -682,6 +761,12 @@ function EditModal({ player, onClose, onSave, saving }: { player: Player, onClos
         }
 
         setFormData(prev => ({ ...prev, [field]: finalValue }));
+    };
+
+    const handleToggleTeam = (id: number) => {
+        const currentTeams = formData.team_ids || [];
+        const newTeams = currentTeams.includes(id) ? currentTeams.filter(tId => tId !== id) : [...currentTeams, id];
+        handleChange('team_ids', newTeams);
     };
 
     const handleTogglePosition = (sigla: string) => {

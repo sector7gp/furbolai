@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     const connection = await pool.getConnection();
     try {
         const body = await request.json();
-        const { player, alias, birth, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, token } = body;
+        const { player, alias, birth, p_name, mail, team_ids, u_id, fitness, defensive, strengths, intensity, token } = body;
 
         if (!token) {
             return NextResponse.json({ error: 'Token de invitación requerido' }, { status: 400 });
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
         // 3. Create Player
         const [result] = await connection.query(
-            `INSERT INTO jugadores (player, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, ng, status) 
+            `INSERT INTO jugadores (player, alias, birth, pos, p_name, mail, u_id, fitness, defensive, strengths, intensity, ng, status) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 player, 
@@ -111,7 +111,6 @@ export async function POST(request: Request) {
                 pos, 
                 p_name || null, 
                 mail, 
-                t_id || null, 
                 u_id, 
                 fitness || 3, 
                 defensive || 3, 
@@ -122,14 +121,22 @@ export async function POST(request: Request) {
             ]
         );
 
-        // 4. Consume Token
+        const newId = (result as any).insertId;
+
+        // 4. Assign teams
+        if (Array.isArray(team_ids) && team_ids.length > 0) {
+            const values = team_ids.map(tId => [newId, tId]);
+            await connection.query('INSERT INTO jugador_equipos (jugador_id, equipo_id) VALUES ?', [values]);
+        }
+
+        // 5. Consume Token
         await connection.query('UPDATE invitaciones SET usado = TRUE WHERE token = ?', [token]);
 
         await connection.commit();
 
         return NextResponse.json({ 
             success: true,
-            id: (result as any).insertId,
+            id: newId,
             ng
         });
     } catch (error) {

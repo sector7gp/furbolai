@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { verifySession } from '@/lib/auth-util';
+import { verifySession, SessionPayload } from '@/lib/auth-util';
 import { cookies } from 'next/headers';
 
 interface NGConfig {
@@ -17,7 +17,6 @@ function calculateNG(stats: { fitness: number; defensive: number; strengths: num
     const { fitness, defensive, strengths, intensity, birth } = stats;
     const { w_fitness, w_defensive, w_strengths, w_intensity, age_min, age_max, age_decay } = config;
     
-    // 1. Weighted average of technical stats
     const totalWeight = Number(w_fitness) + Number(w_defensive) + Number(w_strengths) + Number(w_intensity);
     const weightedSum = (Number(fitness) * Number(w_fitness)) + 
                         (Number(defensive) * Number(w_defensive)) + 
@@ -26,7 +25,6 @@ function calculateNG(stats: { fitness: number; defensive: number; strengths: num
     
     const technicalAverage = totalWeight > 0 ? weightedSum / totalWeight : 0;
     
-    // 2. Age Factor (FE)
     let ageFactor = 1.0;
     if (birth) {
         const today = new Date();
@@ -36,15 +34,12 @@ function calculateNG(stats: { fitness: number; defensive: number; strengths: num
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
         
         if (age < age_min) {
-            // Gradual increase towards min_age
             ageFactor = 0.9 + (age / age_min * 0.1);
         } else if (age > age_max) {
-            // Decay based on parameter
             ageFactor = Math.max(0.7, 1.0 - (age - age_max) * age_decay);
         }
     }
     
-    // 3. Final NG
     return Math.min(10, Math.max(1, Number((technicalAverage * ageFactor).toFixed(1))));
 }
 
@@ -54,18 +49,50 @@ async function getNGConfig(): Promise<NGConfig> {
     return { w_fitness: 1, w_defensive: 1, w_strengths: 1, w_intensity: 1, age_min: 20, age_max: 32, age_decay: 0.02 };
 }
 
-async function isAuthorized() {
+async function getSession(): Promise<SessionPayload | null> {
     const cookieStore = await cookies();
     const token = cookieStore.get('session')?.value;
-    if (!token) return false;
-    const session = await verifySession(token);
-    return session && (session.role === 'Admin' || session.role === 'Entrenador');
+    if (!token) return null;
+    return await verifySession(token);
 }
 
 export async function GET() {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+
     try {
-        const [rows] = await pool.query("SELECT * FROM jugadores WHERE status != 'D' ORDER BY alias ASC");
-        return NextResponse.json(rows);
+        // Obtenemos los equipos a los que el usuario tiene acceso
+        const [userTeams]: any = await pool.query('SELECT equipo_id FROM usuario_equipos WHERE usuario_id = ?', [session.userId]);
+        const teamIds = userTeams.map((t: any) => t.equipo_id);
+
+        if (teamIds.length === 0 && session.role !== 'Admin') {
+            return NextResponse.json([]);
+        }
+
+        let query = `
+            SELECT j.*, GROUP_CONCAT(je.equipo_id) as team_ids 
+            FROM jugadores j
+            LEFT JOIN jugador_equipos je ON j.id = je.jugador_id
+            WHERE j.status != 'D'
+        `;
+        let params: any[] = [];
+
+        if (session.role !== 'Admin') {
+            query += ` AND EXISTS (SELECT 1 FROM jugador_equipos je2 WHERE je2.jugador_id = j.id AND je2.equipo_id IN (?))`;
+            params.push(teamIds);
+        }
+
+        query += ` GROUP BY j.id ORDER BY j.alias ASC`;
+
+        const [rows]: any = await pool.query(query, params);
+        
+        // Transform team_ids from string to array
+        const formattedRows = rows.map((r: any) => ({
+            ...r,
+            team_ids: r.team_ids ? r.team_ids.split(',').map(Number) : []
+        }));
+
+        return NextResponse.json(formattedRows);
     } catch (error) {
         console.error('Database Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -73,12 +100,15 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-    if (!await isAuthorized()) {
+    const session = await getSession();
+    if (!session || (session.role !== 'Admin' && session.role !== 'Entrenador')) {
         return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
+
+    const connection = await pool.getConnection();
     try {
         const body = await request.json();
-        const { player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, status } = body;
+        const { player, mobil, alias, birth, pos, p_name, mail, team_ids, u_id, fitness, defensive, strengths, intensity, status } = body;
 
         const config = await getNGConfig();
 
@@ -91,16 +121,28 @@ export async function POST(request: Request) {
         }
 
         const ng = calculateNG({ fitness: fitness || 5, defensive: defensive || 5, strengths: strengths || 5, intensity: intensity || 5, birth: formattedDate || '' }, config);
-        const [result] = await pool.query(
-            `INSERT INTO jugadores (player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, ng, status) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness || 5, defensive || 5, strengths || 5, intensity || 5, ng, status || 'A']
+        
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(
+            `INSERT INTO jugadores (player, mobil, alias, birth, pos, p_name, mail, u_id, fitness, defensive, strengths, intensity, ng, status) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, u_id || null, fitness || 5, defensive || 5, strengths || 5, intensity || 5, ng, status || 'A']
         );
 
         const newId = (result as any).insertId;
+
+        // Asignar equipos
+        if (Array.isArray(team_ids) && team_ids.length > 0) {
+            const values = team_ids.map(tId => [newId, tId]);
+            await connection.query('INSERT INTO jugador_equipos (jugador_id, equipo_id) VALUES ?', [values]);
+        }
+
+        await connection.commit();
+
         return NextResponse.json({ 
             id: newId, 
-            jugador: player,
+            player,
             alias,
             birth: formattedDate,
             pos,
@@ -110,25 +152,30 @@ export async function POST(request: Request) {
             strengths: strengths || 5,
             intensity: intensity || 5,
             ng,
-            status: status || 'A'
+            status: status || 'A',
+            team_ids: team_ids || []
         });
     } catch (error) {
+        await connection.rollback();
         console.error('Database Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    } finally {
+        connection.release();
     }
 }
 
 export async function PUT(request: Request) {
-    if (!await isAuthorized()) {
+    const session = await getSession();
+    if (!session || (session.role !== 'Admin' && session.role !== 'Entrenador')) {
         return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
+
+    const connection = await pool.getConnection();
     try {
         const body = await request.json();
-        const { id, player, mobil, alias, birth, pos, p_name, mail, t_id, u_id, fitness, defensive, strengths, intensity, status } = body;
+        const { id, player, mobil, alias, birth, pos, p_name, mail, team_ids, u_id, fitness, defensive, strengths, intensity, status } = body;
 
-        if (!id) {
-            return NextResponse.json({ error: 'ID is required' }, { status: 400 });
-        }
+        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
         let formattedDate = null;
         if (birth) {
@@ -141,17 +188,31 @@ export async function PUT(request: Request) {
         const config = await getNGConfig();
         const ng = calculateNG({ fitness: fitness || 5, defensive: defensive || 5, strengths: strengths || 5, intensity: intensity || 5, birth: formattedDate || '' }, config);
 
-        await pool.query(
+        await connection.beginTransaction();
+
+        await connection.query(
             `UPDATE jugadores 
              SET player = ?, mobil = ?, alias = ?, birth = ?, pos = ?, 
-                 p_name = ?, mail = ?, t_id = ?, u_id = ?, fitness = ?, defensive = ?, strengths = ?, intensity = ?, ng = ?, status = ?
+                 p_name = ?, mail = ?, u_id = ?, fitness = ?, defensive = ?, strengths = ?, intensity = ?, ng = ?, status = ?
              WHERE id = ?`,
-            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, t_id || null, u_id || null, fitness, defensive, strengths, intensity, ng, status, id]
+            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, u_id || null, fitness, defensive, strengths, intensity, ng, status, id]
         );
+
+        // Sincronizar equipos
+        await connection.query('DELETE FROM jugador_equipos WHERE jugador_id = ?', [id]);
+        if (Array.isArray(team_ids) && team_ids.length > 0) {
+            const values = team_ids.map(tId => [id, tId]);
+            await connection.query('INSERT INTO jugador_equipos (jugador_id, equipo_id) VALUES ?', [values]);
+        }
+
+        await connection.commit();
 
         return NextResponse.json({ message: 'Player updated successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Database Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    } finally {
+        connection.release();
     }
 }

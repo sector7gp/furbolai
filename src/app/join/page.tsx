@@ -49,7 +49,7 @@ function JoinForm() {
         birth: '',
         mail: '',
         u_id: '',
-        t_id: '',
+        team_ids: [] as number[],
         p_name: [] as string[],
         fitness: 3,
         defensive: 3,
@@ -71,8 +71,8 @@ function JoinForm() {
                 const data = await res.json();
                 if (data.valid) {
                     setIsValid(true);
-                    if (data.t_id) {
-                        setFormData(prev => ({ ...prev, t_id: data.t_id.toString() }));
+                    if (data.team_ids) {
+                        setFormData(prev => ({ ...prev, team_ids: data.team_ids }));
                     }
                 } else {
                     setError(data.error || 'El link ha expirado o es inválido.');
@@ -111,9 +111,8 @@ function JoinForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
-                    token, // Pass token for verification and consumption
+                    token, 
                     p_name: formData.p_name.join(','),
-                    t_id: formData.t_id ? parseInt(formData.t_id) : null
                 }),
             });
 
@@ -281,19 +280,18 @@ function JoinForm() {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">ID del Equipo (Opcional)</label>
-                                            <div className="relative">
-                                                <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                                <input 
-                                                    type="text" 
-                                                    placeholder="Ej: 1"
-                                                    value={formData.t_id}
-                                                    onChange={e => handleChange('t_id', e.target.value)}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-white"
-                                                />
+                                        {formData.team_ids.length > 0 && (
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Equipos Asignados</label>
+                                                <div className="flex flex-wrap gap-2 p-2 bg-white/5 rounded-2xl border border-white/5">
+                                                    {formData.team_ids.map(id => (
+                                                        <span key={id} className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full uppercase">
+                                                            Equipo ID: {id}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                                 

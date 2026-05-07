@@ -78,6 +78,13 @@ Para correr la aplicación de forma persistente en un servidor propio, se recomi
 
 ## 📝 Changelog (Historial de Cambios)
 
+### [1.3.0] - 2026-05-07
+#### Añadido
+- **Soporte Multi-Equipo**: Los jugadores ahora pueden ser asignados a múltiples equipos simultáneamente.
+- **Visibilidad Restringida por Permisos**: Los administradores y entrenadores solo pueden ver a los jugadores de los equipos para los que tienen permiso explícito.
+- **Gestión de Equipos**: Nueva infraestructura para manejar múltiples grupos con visibilidad segregada.
+- **Invitaciones Multi-Equipo**: Posibilidad de generar links de invitación que pre-asignan al jugador a varios equipos a la vez.
+
 ### [1.2.1] - 2026-05-06
 #### Añadido
 - **Sistema de Invitación Segura**: Implementación de links de invitación de un solo uso con tokens temporales (`/join?token=...`).

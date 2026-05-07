@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { t_id } = body;
+        const { t_id } = body; // Can be a single ID or an array of IDs
         
         const token = crypto.randomBytes(32).toString('hex');
         
@@ -28,9 +28,11 @@ export async function POST(request: Request) {
         expires.setHours(expires.getHours() + 24);
         const formattedExpires = expires.toISOString().slice(0, 19).replace('T', ' ');
 
+        const teamIdsString = Array.isArray(t_id) ? t_id.join(',') : (t_id ? t_id.toString() : null);
+
         await pool.query(
             'INSERT INTO invitaciones (token, t_id, fecha_expiracion) VALUES (?, ?, ?)',
-            [token, t_id || null, formattedExpires]
+            [token, teamIdsString, formattedExpires]
         );
 
         return NextResponse.json({ token });
@@ -58,7 +60,9 @@ export async function GET(request: Request) {
             return NextResponse.json({ valid: false, error: 'Invitación inválida o expirada' });
         }
 
-        return NextResponse.json({ valid: true, t_id: rows[0].t_id });
+        const teamIds = rows[0].t_id ? rows[0].t_id.split(',').map(Number) : [];
+
+        return NextResponse.json({ valid: true, team_ids: teamIds });
     } catch (error) {
         console.error('Error validating token:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
