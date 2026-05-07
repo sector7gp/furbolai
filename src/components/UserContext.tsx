@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface User {
     userId: number;
@@ -15,6 +15,7 @@ interface UserContextType {
     user: User | null;
     loading: boolean;
     logout: () => Promise<void>;
+    refreshUser: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -23,32 +24,33 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const pathname = usePathname();
+
+    const fetchUser = useCallback(async () => {
+        try {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data.user);
+            } else {
+                setUser(null);
+                const publicPages = ['/login', '/join']; 
+                if (!publicPages.some(page => pathname.startsWith(page))) {
+                    console.log('[UserContext] No active session, redirecting to login');
+                    router.push('/login');
+                }
+            }
+        } catch (err) {
+            console.error('[UserContext] Error fetching user:', err);
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [pathname, router]);
 
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const res = await fetch('/api/auth/me');
-                if (res.ok) {
-                    const data = await res.json();
-                    setUser(data.user);
-                } else {
-                    setUser(null);
-                    // Redirect to login if not already there or in other public pages
-                    const publicPages = ['/login', '/public']; 
-                    if (!publicPages.includes(window.location.pathname)) {
-                        console.log('[UserContext] No active session, redirecting to login');
-                        router.push('/login');
-                    }
-                }
-            } catch (err) {
-                console.error('[UserContext] Error fetching user:', err);
-                setUser(null);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchUser();
-    }, []);
+    }, [fetchUser]);
 
     const logout = async () => {
         try {
@@ -61,7 +63,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <UserContext.Provider value={{ user, loading, logout }}>
+        <UserContext.Provider value={{ user, loading, logout, refreshUser: fetchUser }}>
             {children}
         </UserContext.Provider>
     );

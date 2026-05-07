@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Loader2, LogIn, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { useUser } from '@/components/UserContext';
+
 export default function LoginPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
+    const { refreshUser } = useUser();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,6 +30,7 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (res.ok) {
+                await refreshUser();
                 if (data.mustChangePassword) {
                     router.push('/change-password');
                 } else {

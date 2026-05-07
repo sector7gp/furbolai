@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft, RefreshCcw, LogOut, Shield, User, Link2, Check } from 'lucide-react';
+import { UserPlus, Search, Loader2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronLeft, RefreshCcw, LogOut, Shield, User, Link2, Check, AlertCircle } from 'lucide-react';
 import { useUser } from '@/components/UserContext';
 import ProfileModal from '@/components/ProfileModal';
 
@@ -519,6 +519,80 @@ export default function PlayersPage() {
     );
 }
 
+function TeamSelector({ 
+    availableTeams, 
+    selectedIds, 
+    onChange 
+}: { 
+    availableTeams: { id: number, nombre: string }[], 
+    selectedIds: number[], 
+    onChange: (id: number) => void 
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 flex justify-between items-center hover:bg-white/10 transition-all text-sm"
+            >
+                <span className="text-gray-300 truncate">
+                    {selectedIds.length === 0 
+                        ? 'Seleccionar equipos...' 
+                        : `${selectedIds.length} equipo(s) seleccionado(s)`}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
+                    <div className="absolute top-full left-0 right-0 mt-2 z-[70] glass border border-white/10 rounded-xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 max-h-48 overflow-y-auto">
+                        <div className="p-1">
+                            {availableTeams.map(team => {
+                                const isSelected = selectedIds.includes(team.id);
+                                return (
+                                    <button
+                                        key={team.id}
+                                        type="button"
+                                        onClick={() => onChange(team.id)}
+                                        className="w-full flex items-center justify-between p-2.5 hover:bg-white/5 rounded-lg transition-colors group"
+                                    >
+                                        <span className={`text-sm ${isSelected ? 'text-blue-400 font-bold' : 'text-gray-400'}`}>
+                                            {team.nombre}
+                                        </span>
+                                        {isSelected && <Check className="w-4 h-4 text-blue-400" />}
+                                    </button>
+                                );
+                            })}
+                            {availableTeams.length === 0 && (
+                                <div className="p-4 text-center text-xs text-gray-500 italic">
+                                    No hay equipos disponibles
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Preview of selected teams */}
+            {selectedIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                    {selectedIds.map(id => {
+                        const team = availableTeams.find(t => t.id === id);
+                        return (
+                            <span key={id} className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold">
+                                {team?.nombre || `ID: ${id}`}
+                            </span>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
+
 function NewPlayerModal({ onClose, onSave, saving, availableTeams }: { 
     onClose: () => void, 
     onSave: (p: Partial<Player>) => void, 
@@ -634,26 +708,11 @@ function NewPlayerModal({ onClose, onSave, saving, availableTeams }: {
                         </div>
                         <div className="col-span-2">
                             <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Equipos</label>
-                            <div className="flex flex-wrap gap-2">
-                                {availableTeams.map(team => {
-                                    const isSelected = team_ids.includes(team.id);
-                                    return (
-                                        <button
-                                            key={team.id}
-                                            type="button"
-                                            onClick={() => handleToggleTeam(team.id)}
-                                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
-                                                isSelected 
-                                                ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-lg shadow-blue-500/10' 
-                                                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
-                                            }`}
-                                        >
-                                            {team.nombre}
-                                        </button>
-                                    );
-                                })}
-                                {availableTeams.length === 0 && <span className="text-[10px] text-gray-600 italic">No tienes equipos asignados</span>}
-                            </div>
+                            <TeamSelector 
+                                availableTeams={availableTeams}
+                                selectedIds={team_ids}
+                                onChange={handleToggleTeam}
+                            />
                         </div>
 
                         <div className="col-span-2">
@@ -883,26 +942,11 @@ function EditModal({ player, onClose, onSave, saving, availableTeams }: {
                     <div className="grid grid-cols-3 gap-4">
                         <div className="col-span-2">
                             <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Equipos</label>
-                            <div className="flex flex-wrap gap-2">
-                                {availableTeams.map(team => {
-                                    const isSelected = (formData.team_ids || []).includes(team.id);
-                                    return (
-                                        <button
-                                            key={team.id}
-                                            type="button"
-                                            onClick={() => handleToggleTeam(team.id)}
-                                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
-                                                isSelected 
-                                                ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-lg shadow-blue-500/10' 
-                                                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
-                                            }`}
-                                        >
-                                            {team.nombre}
-                                        </button>
-                                    );
-                                })}
-                                {availableTeams.length === 0 && <span className="text-[10px] text-gray-600 italic">No tienes equipos asignados</span>}
-                            </div>
+                            <TeamSelector 
+                                availableTeams={availableTeams}
+                                selectedIds={formData.team_ids || []}
+                                onChange={handleToggleTeam}
+                            />
                         </div>
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Casaca</label>
