@@ -49,7 +49,7 @@ export default function Footer() {
                         </div>
                         {versionInfo?.buildDate && (
                             <span className="text-[8px] text-gray-600 font-mono">
-                                Last commit: {new Date(versionInfo.buildDate).toLocaleDateString()}
+                                Last commit: {versionInfo.buildDate}
                             </span>
                         )}
                     </div>

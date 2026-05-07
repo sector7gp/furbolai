@@ -7,10 +7,12 @@ try {
     let version = pkg.version || '0.0.0';
     let gitHash = 'no-git';
     let branch = 'no-branch';
+    let buildDate = new Date().toISOString();
 
     try {
         gitHash = execSync('git rev-parse --short HEAD').toString().trim();
         branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+        buildDate = execSync('git log -1 --format=%cd --date=format:"%d/%m/%Y %H:%M"').toString().trim();
 
         // Si el nombre de la rama parece una versión (v1.2.3 o 1.2.3), usarlo
         const versionPattern = /^v?\d+(\.\d+)+$/;
@@ -29,7 +31,7 @@ try {
         version: version,
         gitHash: gitHash,
         branch: branch,
-        buildDate: new Date().toISOString()
+        buildDate: buildDate
     };
 
     const publicDir = path.join(__dirname, '../public');
