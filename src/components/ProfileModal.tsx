@@ -282,9 +282,9 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
                                     <p className="text-[9px] font-bold text-gray-500 uppercase mb-1">{stat.label}</p>
                                     <input
                                         type="number"
-                                        min="1"
-                                        max="10"
-                                        step="0.5"
+                                        min="0"
+                                        max="5"
+                                        step="1"
                                         value={(formData as any)[stat.key]}
                                         onChange={e => handleChange(stat.key as keyof PlayerData, Number(e.target.value))}
                                         className={`w-full bg-transparent text-center text-xl font-black ${stat.color} outline-none`}
