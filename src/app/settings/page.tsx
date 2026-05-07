@@ -12,9 +12,15 @@ import {
     Trash2, 
     Shield, 
     CheckCircle2,
-    X
+    X,
+    UserCog,
+    Settings
 } from 'lucide-react';
 import { useUser } from '@/components/UserContext';
+import { 
+    ChevronDown, 
+    Check 
+} from 'lucide-react';
 
 interface Team {
     id: number;
@@ -22,8 +28,71 @@ interface Team {
     descripcion: string;
 }
 
+interface UserInfo {
+    id: number;
+    username: string;
+    role: 'Jugador' | 'Entrenador' | 'Admin';
+    display_name: string | null;
+    team_ids: number[];
+}
+
+function TeamSelector({ 
+    availableTeams, 
+    selectedIds, 
+    onChange 
+}: { 
+    availableTeams: { id: number, nombre: string }[], 
+    selectedIds: number[], 
+    onChange: (id: number) => void 
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 flex justify-between items-center hover:bg-white/10 transition-all text-sm"
+            >
+                <span className="text-gray-300 truncate">
+                    {selectedIds.length === 0 
+                        ? 'Seleccionar equipos...' 
+                        : `${selectedIds.length} equipo(s) seleccionado(s)`}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
+                    <div className="absolute top-full left-0 right-0 mt-2 z-[70] glass border border-white/10 rounded-xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 max-h-48 overflow-y-auto">
+                        <div className="p-1">
+                            {availableTeams.map(team => {
+                                const isSelected = selectedIds.includes(team.id);
+                                return (
+                                    <button
+                                        key={team.id}
+                                        type="button"
+                                        onClick={() => onChange(team.id)}
+                                        className="w-full flex items-center justify-between p-2.5 hover:bg-white/5 rounded-lg transition-colors group"
+                                    >
+                                        <span className={`text-sm ${isSelected ? 'text-blue-400 font-bold' : 'text-gray-400'}`}>
+                                            {team.nombre}
+                                        </span>
+                                        {isSelected && <Check className="w-4 h-4 text-blue-400" />}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
 export default function SettingsPage() {
-    const { user } = useUser();
+    const { user: currentUser } = useUser();
     const [config, setConfig] = useState({
         teamCount: 2,
         w_fitness: 1,
@@ -36,11 +105,13 @@ export default function SettingsPage() {
     });
     
     const [teams, setTeams] = useState<Team[]>([]);
+    const [users, setUsers] = useState<UserInfo[]>([]);
     const [loadingTeams, setLoadingTeams] = useState(true);
+    const [loadingUsers, setLoadingUsers] = useState(true);
     const [saved, setSaved] = useState(false);
     const [recalculating, setRecalculating] = useState(false);
     
-    // New team form
+    // Modals
     const [showNewTeamModal, setShowNewTeamModal] = useState(false);
     const [newTeam, setNewTeam] = useState({ nombre: '', descripcion: '' });
     const [creatingTeam, setCreatingTeam] = useState(false);
@@ -63,9 +134,11 @@ export default function SettingsPage() {
             })
             .catch(console.error);
 
-        // Fetch teams
         fetchTeams();
-    }, []);
+        if (currentUser?.role === 'Admin') {
+            fetchUsers();
+        }
+    }, [currentUser]);
 
     const fetchTeams = async () => {
         setLoadingTeams(true);
@@ -79,6 +152,21 @@ export default function SettingsPage() {
             console.error('Error fetching teams:', err);
         } finally {
             setLoadingTeams(false);
+        }
+    };
+
+    const fetchUsers = async () => {
+        setLoadingUsers(true);
+        try {
+            const res = await fetch('/api/users');
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            }
+        } catch (err) {
+            console.error('Error fetching users:', err);
+        } finally {
+            setLoadingUsers(false);
         }
     };
 
@@ -134,7 +222,7 @@ export default function SettingsPage() {
     };
 
     const handleDeleteTeam = async (id: number) => {
-        if (!confirm('¿Estás seguro de eliminar este equipo? Esto no borrará a los jugadores, pero perderán su relación con el equipo.')) return;
+        if (!confirm('¿Estás seguro de eliminar este equipo?')) return;
         try {
             const res = await fetch('/api/teams', {
                 method: 'DELETE',
@@ -149,8 +237,44 @@ export default function SettingsPage() {
         }
     };
 
+    const handleUserUpdate = async (id: number, updates: Partial<UserInfo>) => {
+        try {
+            const userToUpdate = users.find(u => u.id === id);
+            if (!userToUpdate) return;
+
+            const finalData = { ...userToUpdate, ...updates };
+            const res = await fetch(`/api/users`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    id: finalData.id, 
+                    role: finalData.role, 
+                    team_ids: finalData.team_ids 
+                })
+            });
+
+            if (res.ok) {
+                setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
+            }
+        } catch (err) {
+            console.error('Error updating user:', err);
+        }
+    };
+
+    const handleToggleUserTeam = (userId: number, teamId: number) => {
+        const user = users.find(u => u.id === userId);
+        if (!user) return;
+
+        const currentTeams = user.team_ids || [];
+        const newTeams = currentTeams.includes(teamId) 
+            ? currentTeams.filter(tId => tId !== teamId) 
+            : [...currentTeams, teamId];
+        
+        handleUserUpdate(userId, { team_ids: newTeams });
+    };
+
     return (
-        <main className="max-w-4xl mx-auto px-4 py-12">
+        <main className="max-w-6xl mx-auto px-4 py-12">
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
                 <div className="flex items-center gap-4">
                     <Link href="/" className="p-2 hover:bg-white/5 rounded-full transition-colors">
@@ -177,97 +301,21 @@ export default function SettingsPage() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-8">
-                    {/* Teams Section */}
-                    <section className="glass p-8 rounded-[2.5rem] border-white/5 shadow-2xl relative overflow-hidden">
-                        <div className="flex justify-between items-center mb-8">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                                    <Users className="w-5 h-5 text-emerald-400" />
-                                </div>
-                                <h2 className="text-xl font-bold uppercase tracking-tight">Equipos</h2>
-                            </div>
-                            {user?.role === 'Admin' && (
-                                <button 
-                                    onClick={() => setShowNewTeamModal(true)}
-                                    className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl transition-all"
-                                >
-                                    <Plus className="w-5 h-5" />
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="space-y-3">
-                            {loadingTeams ? (
-                                <div className="flex items-center justify-center py-10">
-                                    <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
-                                </div>
-                            ) : (
-                                teams.map(team => (
-                                    <div key={team.id} className="group flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-emerald-500/30 transition-all">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-white group-hover:text-emerald-400 transition-colors">{team.nombre}</span>
-                                            {team.descripcion && <span className="text-[10px] text-gray-500">{team.descripcion}</span>}
-                                        </div>
-                                        {user?.role === 'Admin' && (
-                                            <button 
-                                                onClick={() => handleDeleteTeam(team.id)}
-                                                className="p-2 text-gray-600 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </div>
-                                ))
-                            )}
-                            {teams.length === 0 && !loadingTeams && (
-                                <p className="text-center text-xs text-gray-600 italic py-6">No hay equipos configurados.</p>
-                            )}
-                        </div>
-                    </section>
-
-                    {/* Distribution Section */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                {/* Column 1: Core Settings */}
+                <div className="space-y-8 xl:col-span-1">
                     <section className="glass p-8 rounded-[2.5rem] border-white/5 shadow-2xl">
                         <div className="flex items-center gap-3 mb-8">
                             <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                                <LayoutGrid className="w-5 h-5 text-emerald-400" />
-                            </div>
-                            <h2 className="text-xl font-bold uppercase tracking-tight">Partida Semanal</h2>
-                        </div>
-
-                        <div className="space-y-8">
-                            <div>
-                                <div className="flex justify-between items-end mb-4">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Equipos en el sorteo</label>
-                                    <span className="text-2xl font-black text-emerald-400">{config.teamCount}</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="2"
-                                    max="4"
-                                    value={config.teamCount}
-                                    onChange={e => setConfig(prev => ({ ...prev, teamCount: Number(e.target.value) }))}
-                                    className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                                />
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
-                <div className="space-y-8">
-                    <section className="glass p-8 rounded-[2.5rem] border-white/5 shadow-2xl">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                                <Shield className="w-5 h-5 text-emerald-400" />
+                                <Settings className="w-5 h-5 text-emerald-400" />
                             </div>
                             <h2 className="text-xl font-bold uppercase tracking-tight">Algoritmo NG</h2>
                         </div>
-
+                        {/* Algorithm settings from original file... */}
                         <div className="space-y-8">
                             <div>
                                 <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-6">Pesos de Atributos</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                <div className="grid gap-6">
                                     {[
                                         { label: 'Estado Físico', key: 'w_fitness' },
                                         { label: 'Defensa', key: 'w_defensive' },
@@ -292,51 +340,177 @@ export default function SettingsPage() {
                                     ))}
                                 </div>
                             </div>
-
                             <div className="pt-6 border-t border-white/5">
                                 <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] mb-6">Curva de Edad</h3>
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-3 gap-3">
                                     <div>
-                                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2 ml-1 text-center">Peak In.</label>
+                                        <label className="block text-[8px] font-bold text-gray-500 uppercase mb-2 text-center">Peak In.</label>
                                         <input
                                             type="number"
                                             value={config.age_min}
                                             onChange={e => setConfig(prev => ({ ...prev, age_min: Number(e.target.value) }))}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-emerald-500 text-white text-center font-bold"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 text-white text-center font-bold text-sm"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2 ml-1 text-center">Peak Fin.</label>
+                                        <label className="block text-[8px] font-bold text-gray-500 uppercase mb-2 text-center">Peak Fin.</label>
                                         <input
                                             type="number"
                                             value={config.age_max}
                                             onChange={e => setConfig(prev => ({ ...prev, age_max: Number(e.target.value) }))}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-emerald-500 text-white text-center font-bold"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 text-white text-center font-bold text-sm"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2 ml-1 text-center">Decaim.</label>
+                                        <label className="block text-[8px] font-bold text-gray-500 uppercase mb-2 text-center">Decaim.</label>
                                         <input
                                             type="number"
                                             step="0.01"
                                             value={config.age_decay}
                                             onChange={e => setConfig(prev => ({ ...prev, age_decay: Number(e.target.value) }))}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-emerald-500 text-white text-center font-bold"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 text-white text-center font-bold text-sm"
                                         />
                                     </div>
                                 </div>
-                                <p className="text-[10px] text-gray-600 mt-6 italic text-center px-4 leading-relaxed">
-                                    * El decaimiento se aplica por cada año después del peak fin. (0.02 = 2% anual).
-                                </p>
                             </div>
                         </div>
                     </section>
+
+                    <section className="glass p-8 rounded-[2.5rem] border-white/5 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                                <LayoutGrid className="w-5 h-5 text-emerald-400" />
+                            </div>
+                            <h2 className="text-xl font-bold uppercase tracking-tight">Sorteo Semanal</h2>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-end mb-4">
+                                <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Equipos en el sorteo</label>
+                                <span className="text-2xl font-black text-emerald-400">{config.teamCount}</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="2"
+                                max="4"
+                                value={config.teamCount}
+                                onChange={e => setConfig(prev => ({ ...prev, teamCount: Number(e.target.value) }))}
+                                className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                            />
+                        </div>
+                    </section>
                 </div>
+
+                {/* Column 2: Team Management */}
+                <div className="space-y-8 xl:col-span-1">
+                    <section className="glass p-8 rounded-[2.5rem] border-white/5 shadow-2xl h-full">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                                    <Users className="w-5 h-5 text-emerald-400" />
+                                </div>
+                                <h2 className="text-xl font-bold uppercase tracking-tight">Equipos</h2>
+                            </div>
+                            {currentUser?.role === 'Admin' && (
+                                <button 
+                                    onClick={() => setShowNewTeamModal(true)}
+                                    className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl transition-all"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                            {loadingTeams ? (
+                                <div className="flex items-center justify-center py-10">
+                                    <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
+                                </div>
+                            ) : (
+                                teams.map(team => (
+                                    <div key={team.id} className="group flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-emerald-500/30 transition-all">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-white group-hover:text-emerald-400 transition-colors">{team.nombre}</span>
+                                            {team.descripcion && <span className="text-[10px] text-gray-500 truncate max-w-[150px]">{team.descripcion}</span>}
+                                        </div>
+                                        {currentUser?.role === 'Admin' && (
+                                            <button 
+                                                onClick={() => handleDeleteTeam(team.id)}
+                                                className="p-2 text-gray-600 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                            {teams.length === 0 && !loadingTeams && (
+                                <p className="text-center text-xs text-gray-600 italic py-6">No hay equipos configurados.</p>
+                            )}
+                        </div>
+                    </section>
+                </div>
+
+                {/* Column 3: Roles & Permissions (Admins Only) */}
+                {currentUser?.role === 'Admin' && (
+                    <div className="xl:col-span-1">
+                        <section className="glass p-8 rounded-[2.5rem] border-white/5 shadow-2xl h-full">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                                    <UserCog className="w-5 h-5 text-emerald-400" />
+                                </div>
+                                <h2 className="text-xl font-bold uppercase tracking-tight">Roles y Permisos</h2>
+                            </div>
+
+                            <div className="space-y-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2">
+                                {loadingUsers ? (
+                                    <div className="flex items-center justify-center py-10">
+                                        <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
+                                    </div>
+                                ) : (
+                                    users.map(u => (
+                                        <div key={u.id} className="p-5 bg-white/5 border border-white/5 rounded-3xl space-y-4">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-white">{u.display_name || u.username}</span>
+                                                    <span className="text-[10px] text-gray-500 font-mono">{u.username}</span>
+                                                </div>
+                                                <select 
+                                                    value={u.role}
+                                                    onChange={(e) => handleUserUpdate(u.id, { role: e.target.value as any })}
+                                                    className={`text-[10px] font-bold px-2 py-1 rounded-lg border bg-transparent outline-none transition-all ${
+                                                        u.role === 'Admin' ? 'text-rose-400 border-rose-400/30' :
+                                                        u.role === 'Entrenador' ? 'text-amber-400 border-amber-400/30' :
+                                                        'text-blue-400 border-blue-400/30'
+                                                    }`}
+                                                >
+                                                    <option value="Jugador" className="bg-[#0a0a0a]">Jugador</option>
+                                                    <option value="Entrenador" className="bg-[#0a0a0a]">Entrenador</option>
+                                                    <option value="Admin" className="bg-[#0a0a0a]">Admin</option>
+                                                </select>
+                                            </div>
+
+                                            {u.role !== 'Jugador' && (
+                                                <div className="space-y-2">
+                                                    <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest ml-1">Equipos Autorizados</label>
+                                                    <TeamSelector 
+                                                        availableTeams={teams}
+                                                        selectedIds={u.team_ids || []}
+                                                        onChange={(teamId) => handleToggleUserTeam(u.id, teamId)}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </section>
+                    </div>
+                )}
             </div>
 
             {/* New Team Modal */}
             {showNewTeamModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="glass w-full max-w-md rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/5">
                             <h2 className="text-xl font-black uppercase tracking-tight">Nuevo Equipo</h2>
