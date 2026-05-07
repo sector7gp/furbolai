@@ -20,11 +20,17 @@ export async function proxy(req: NextRequest) {
     const sessionToken = req.cookies.get('session')?.value;
 
     if (!sessionToken) {
+        if (pathname.startsWith('/api/')) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
         return NextResponse.redirect(new URL('/login', req.url));
     }
 
     const session = await verifySession(sessionToken);
     if (!session) {
+        if (pathname.startsWith('/api/')) {
+            return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 });
+        }
         return NextResponse.redirect(new URL('/login', req.url));
     }
 
