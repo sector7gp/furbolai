@@ -188,16 +188,26 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
     const session = await getSession();
-    if (!session || (session.role !== 'Admin' && session.role !== 'Entrenador')) {
-        return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    if (!session) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const { id } = body;
+
+    // Authorization: Admin, Entrenador, or the Player themselves
+    const isSelf = session.role === 'Jugador' && session.playerId === Number(id);
+    const isManager = session.role === 'Admin' || session.role === 'Entrenador';
+
+    if (!isManager && !isSelf) {
+        return NextResponse.json({ error: 'No tiene permisos para editar este perfil' }, { status: 403 });
+    }
+
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     const connection = await pool.getConnection();
     try {
-        const body = await request.json();
-        const { id, player, mobil, alias, birth, pos, p_name, mail, team_ids, u_id, fitness, defensive, strengths, intensity, status } = body;
-
-        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+        const { player, mobil, alias, birth, pos, p_name, mail, team_ids, u_id, fitness, defensive, strengths, intensity, status } = body;
 
         let formattedDate = null;
         if (birth) {
@@ -209,6 +219,12 @@ export async function PUT(request: Request) {
 
         const config = await getNGConfig();
         const ng = calculateNG({ fitness: fitness || 5, defensive: defensive || 5, strengths: strengths || 5, intensity: intensity || 5, birth: formattedDate || '' }, config);
+
+        // Fetch current data to preserve restricted fields for players
+        const [current]: any = await pool.query('SELECT status FROM jugadores WHERE id = ?', [id]);
+        if (current.length === 0) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+        
+        const finalStatus = isManager ? status : current[0].status;
 
         // Verificar sobrenombre único (excluyendo al propio jugador)
         if (alias) {
@@ -225,14 +241,16 @@ export async function PUT(request: Request) {
              SET player = ?, mobil = ?, alias = ?, birth = ?, pos = ?, 
                  p_name = ?, mail = ?, u_id = ?, fitness = ?, defensive = ?, strengths = ?, intensity = ?, ng = ?, status = ?
              WHERE id = ?`,
-            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, u_id || null, fitness, defensive, strengths, intensity, ng, status, id]
+            [player, mobil, alias, formattedDate, pos, p_name || null, mail || null, u_id || null, fitness, defensive, strengths, intensity, ng, finalStatus, id]
         );
 
-        // Sincronizar equipos
-        await connection.query('DELETE FROM jugador_equipos WHERE jugador_id = ?', [id]);
-        if (Array.isArray(team_ids) && team_ids.length > 0) {
-            const values = team_ids.map(tId => [id, tId]);
-            await connection.query('INSERT INTO jugador_equipos (jugador_id, equipo_id) VALUES ?', [values]);
+        // Sincronizar equipos (Solo managers pueden cambiar equipos)
+        if (isManager) {
+            await connection.query('DELETE FROM jugador_equipos WHERE jugador_id = ?', [id]);
+            if (Array.isArray(team_ids) && team_ids.length > 0) {
+                const values = team_ids.map(tId => [id, tId]);
+                await connection.query('INSERT INTO jugador_equipos (jugador_id, equipo_id) VALUES ?', [values]);
+            }
         }
 
         await connection.commit();
