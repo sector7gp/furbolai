@@ -657,30 +657,6 @@ function NewPlayerModal({ onClose, onSave, saving, availableTeams }: {
                         </div>
 
                         <div className="col-span-2">
-                            <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Equipos</label>
-                            <div className="flex flex-wrap gap-2">
-                                {availableTeams.map(team => {
-                                    const isSelected = (formData.team_ids || []).includes(team.id);
-                                    return (
-                                        <button
-                                            key={team.id}
-                                            type="button"
-                                            onClick={() => handleToggleTeam(team.id)}
-                                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
-                                                isSelected 
-                                                ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-lg shadow-blue-500/10' 
-                                                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
-                                            }`}
-                                        >
-                                            {team.nombre}
-                                        </button>
-                                    );
-                                })}
-                                {availableTeams.length === 0 && <span className="text-[10px] text-gray-600 italic">No tienes equipos asignados</span>}
-                            </div>
-                        </div>
-
-                        <div className="col-span-2">
                             <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Posiciones</label>
                             <div className="flex flex-wrap gap-2">
                                 {POSITIONS.map(pos => {
@@ -905,15 +881,28 @@ function EditModal({ player, onClose, onSave, saving, availableTeams }: {
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-xs text-gray-400 mb-1 ml-1">ID Equipo</label>
-                            <input
-                                type="number"
-                                value={formData.t_id || ''}
-                                onChange={e => handleChange('t_id', parseInt(e.target.value) || 0)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
-                                placeholder="1"
-                            />
+                        <div className="col-span-2">
+                            <label className="block text-[10px] text-gray-500 uppercase mb-2 ml-1">Equipos</label>
+                            <div className="flex flex-wrap gap-2">
+                                {availableTeams.map(team => {
+                                    const isSelected = (formData.team_ids || []).includes(team.id);
+                                    return (
+                                        <button
+                                            key={team.id}
+                                            type="button"
+                                            onClick={() => handleToggleTeam(team.id)}
+                                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
+                                                isSelected 
+                                                ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-lg shadow-blue-500/10' 
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                                            }`}
+                                        >
+                                            {team.nombre}
+                                        </button>
+                                    );
+                                })}
+                                {availableTeams.length === 0 && <span className="text-[10px] text-gray-600 italic">No tienes equipos asignados</span>}
+                            </div>
                         </div>
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 ml-1">Casaca</label>
